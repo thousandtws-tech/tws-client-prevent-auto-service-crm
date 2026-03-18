@@ -1,7 +1,11 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-const getPackageName = (id: string) => {
+const getPackageName = (id: unknown) => {
+  if (typeof id !== "string" || !id) {
+    return null;
+  }
+
   const normalizedId = id.replace(/\\/g, "/");
   const nodeModulesMarker = "/node_modules/";
   const nodeModulesIndex = normalizedId.lastIndexOf(nodeModulesMarker);
@@ -20,7 +24,11 @@ const getPackageName = (id: string) => {
   return scopeOrName ?? null;
 };
 
-const getManualChunk = (id: string) => {
+const getManualChunk = (id: unknown) => {
+  if (typeof id !== "string") {
+    return undefined;
+  }
+
   const packageName = getPackageName(id);
 
   if (!packageName) {
