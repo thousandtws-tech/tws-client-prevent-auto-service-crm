@@ -20,41 +20,57 @@ export type UpsertServiceOrderChecklistPayload = {
   status?: ServiceOrderChecklistStatus;
 };
 
-const DEFAULT_CHECKLISTS: ServiceOrderChecklistItem[] = [
-  { id: "oil", label: "Nível do óleo", status: "active", system: true, sortOrder: 10 },
-  { id: "belts", label: "Correias", status: "active", system: true, sortOrder: 20 },
-  {
-    id: "cooling",
-    label: "Arrefecimento",
-    status: "active",
-    system: true,
-    sortOrder: 30,
-  },
-  { id: "brakes", label: "Freios", status: "active", system: true, sortOrder: 40 },
-  {
-    id: "leaks",
-    label: "Vazamentos",
-    status: "active",
-    system: true,
-    sortOrder: 50,
-  },
-  { id: "lights", label: "Luzes", status: "active", system: true, sortOrder: 60 },
-  {
-    id: "tires",
-    label: "Pneus / calibragem",
-    status: "active",
-    system: true,
-    sortOrder: 70,
-  },
-  {
-    id: "suspension",
-    label: "Suspensão",
-    status: "active",
-    system: true,
-    sortOrder: 80,
-  },
-  { id: "others", label: "Outros", status: "active", system: true, sortOrder: 90 },
-].map((item) => ({
+type DefaultChecklistSeed = {
+  id: string;
+  label: string;
+  status: ServiceOrderChecklistStatus;
+  system: boolean;
+  sortOrder: number;
+};
+
+const DEFAULT_CHECKLISTS: ServiceOrderChecklistItem[] = (
+  [
+    {
+      id: "oil",
+      label: "Nível do óleo",
+      status: "active",
+      system: true,
+      sortOrder: 10,
+    },
+    { id: "belts", label: "Correias", status: "active", system: true, sortOrder: 20 },
+    {
+      id: "cooling",
+      label: "Arrefecimento",
+      status: "active",
+      system: true,
+      sortOrder: 30,
+    },
+    { id: "brakes", label: "Freios", status: "active", system: true, sortOrder: 40 },
+    {
+      id: "leaks",
+      label: "Vazamentos",
+      status: "active",
+      system: true,
+      sortOrder: 50,
+    },
+    { id: "lights", label: "Luzes", status: "active", system: true, sortOrder: 60 },
+    {
+      id: "tires",
+      label: "Pneus / calibragem",
+      status: "active",
+      system: true,
+      sortOrder: 70,
+    },
+    {
+      id: "suspension",
+      label: "Suspensão",
+      status: "active",
+      system: true,
+      sortOrder: 80,
+    },
+    { id: "others", label: "Outros", status: "active", system: true, sortOrder: 90 },
+  ] as DefaultChecklistSeed[]
+).map((item) => ({
   ...item,
   createdAt: "2026-03-17T00:00:00.000Z",
   updatedAt: "2026-03-17T00:00:00.000Z",

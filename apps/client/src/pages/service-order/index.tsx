@@ -1251,7 +1251,7 @@ export const ServiceOrderPage: React.FC = () => {
           setSearchParams(next, { replace: true });
         } catch (linkError) {
           open?.({
-            type: "warning",
+            type: "progress",
             message: "OS criada, mas o vínculo com o agendamento falhou",
             description: getErrorMessage(linkError),
           });
