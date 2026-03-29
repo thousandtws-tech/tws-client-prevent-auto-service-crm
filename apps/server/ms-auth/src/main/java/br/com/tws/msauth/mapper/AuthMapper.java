@@ -52,7 +52,7 @@ public class AuthMapper {
     public SignupResponse toSignupResponse(SignupResult result) {
         return SignupResponse.builder()
                 .message(result.getMessage())
-                .emailVerificationRequired(true)
+                .emailVerificationRequired(false)
                 .workshop(toWorkshopResponse(result.getWorkshop()))
                 .user(toUserResponse(result.getUser()))
                 .build();

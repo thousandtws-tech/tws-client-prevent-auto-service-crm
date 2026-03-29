@@ -37,8 +37,8 @@ public class AuthFactory {
                 .passwordHash(passwordHash)
                 .role(UserRole.OWNER.name())
                 .active(true)
-                .emailVerifiedAt(null)
-                .verificationEmailSentAt(now)
+                .emailVerifiedAt(now)
+                .verificationEmailSentAt(null)
                 .createdAt(now)
                 .updatedAt(now)
                 .build();

@@ -75,7 +75,9 @@ const backendAuthProvider: AuthProvider = {
 
       return {
         success: true,
-        redirectTo: `/verificacao-email?emailVerification=pending&userId=${signup.user.id}&workshopSlug=${encodeURIComponent(signup.workshop.slug)}&email=${encodeURIComponent(signup.user.email)}&message=${encodeURIComponent(signup.message)}`,
+        redirectTo: `/login?email=${encodeURIComponent(signup.user.email)}&workshopSlug=${encodeURIComponent(signup.workshop.slug)}&message=${encodeURIComponent(
+          "Cadastro realizado com sucesso. Agora voce ja pode entrar."
+        )}`,
       };
     } catch (error) {
       return {

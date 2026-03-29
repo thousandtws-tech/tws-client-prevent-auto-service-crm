@@ -206,42 +206,6 @@ const submitLabelByType: Record<AuthMode, string> = {
   register: "Criar conta",
 };
 
-const verificationPanelByStatus = {
-  pending: {
-    title: "Confirmação pendente",
-    accent: "#7dd3fc",
-    background: alpha("#102538", 0.95),
-    border: "1px solid rgba(33, 150, 243, 0.24)",
-    items: [
-      "O cadastro foi criado, mas o primeiro acesso depende da validação por e-mail.",
-      "Abra a caixa de entrada do responsável e localize o código de 6 dígitos enviado pelo sistema.",
-      "Depois da validação, volte para esta tela e entre normalmente.",
-    ],
-  },
-  success: {
-    title: "E-mail confirmado",
-    accent: "#86efac",
-    background: alpha("#113220", 0.95),
-    border: "1px solid rgba(76, 175, 80, 0.28)",
-    items: [
-      "A conta principal já está validada.",
-      "Agora o ambiente pode ser acessado com e-mail e senha.",
-      "Use o login abaixo para entrar na oficina.",
-    ],
-  },
-  error: {
-    title: "Falha na confirmação",
-    accent: "#fca5a5",
-    background: alpha("#2b1010", 0.95),
-    border: "1px solid rgba(244, 67, 54, 0.24)",
-    items: [
-      "O link informado não pôde ser validado.",
-      "Confirme se você abriu o link mais recente enviado para o e-mail do responsável.",
-      "Se necessário, refaça o cadastro para emitir um novo link.",
-    ],
-  },
-} as const;
-
 const getHighlights = (type: AuthMode): HighlightItem[] => {
   if (type === "login") {
     return [
@@ -308,16 +272,7 @@ const CorporateAuthPage: React.FC<CorporateAuthPageProps> = ({
       register: false,
       confirm: false,
     });
-  const emailVerificationStatus =
-    type === "login" ? searchParams.get("emailVerification")?.trim() ?? "" : "";
-  const emailVerificationMessage =
-    type === "login" ? searchParams.get("message")?.trim() ?? "" : "";
-  const verificationPanel =
-    emailVerificationStatus === "pending" ||
-    emailVerificationStatus === "success" ||
-    emailVerificationStatus === "error"
-      ? verificationPanelByStatus[emailVerificationStatus]
-      : null;
+  const infoMessage = type === "login" ? searchParams.get("message")?.trim() ?? "" : "";
 
   React.useEffect(() => {
     if (type !== "login") {
@@ -713,91 +668,19 @@ const CorporateAuthPage: React.FC<CorporateAuthPageProps> = ({
                 </Alert>
               ) : null}
 
-              {!errorMessage &&
-              emailVerificationStatus &&
-              emailVerificationMessage ? (
+              {!errorMessage && infoMessage ? (
                 <Alert
-                  severity={
-                    emailVerificationStatus === "success"
-                      ? "success"
-                      : emailVerificationStatus === "pending"
-                        ? "info"
-                        : "error"
-                  }
+                  severity="info"
                   sx={{
                     borderRadius: "12px",
                     alignItems: "center",
-                    backgroundColor:
-                      emailVerificationStatus === "success"
-                        ? alpha("#113220", 0.95)
-                        : emailVerificationStatus === "pending"
-                          ? alpha("#102538", 0.95)
-                          : alpha("#2b1010", 0.95),
-                    color:
-                      emailVerificationStatus === "success"
-                        ? "#d9ffe8"
-                        : emailVerificationStatus === "pending"
-                          ? "#dff4ff"
-                          : "#ffd7d7",
-                    border:
-                      emailVerificationStatus === "success"
-                        ? "1px solid rgba(76, 175, 80, 0.28)"
-                        : emailVerificationStatus === "pending"
-                          ? "1px solid rgba(33, 150, 243, 0.24)"
-                          : "1px solid rgba(244, 67, 54, 0.24)",
+                    backgroundColor: alpha("#102538", 0.95),
+                    color: "#dff4ff",
+                    border: "1px solid rgba(33, 150, 243, 0.24)",
                   }}
                 >
-                  {emailVerificationMessage}
+                  {infoMessage}
                 </Alert>
-              ) : null}
-
-              {!errorMessage && verificationPanel ? (
-                <Box
-                  sx={{
-                    borderRadius: "16px",
-                    p: 2.25,
-                    backgroundColor: verificationPanel.background,
-                    border: verificationPanel.border,
-                  }}
-                >
-                  <Stack spacing={1.5}>
-                    <Typography
-                      variant="subtitle1"
-                      sx={{ color: verificationPanel.accent, fontWeight: 700 }}
-                    >
-                      {verificationPanel.title}
-                    </Typography>
-                    <Stack spacing={1}>
-                      {verificationPanel.items.map((item) => (
-                        <Box
-                          key={item}
-                          sx={{
-                            display: "grid",
-                            gridTemplateColumns: "10px 1fr",
-                            columnGap: 1.25,
-                            alignItems: "start",
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              width: 6,
-                              height: 6,
-                              borderRadius: "999px",
-                              mt: "9px",
-                              bgcolor: verificationPanel.accent,
-                            }}
-                          />
-                          <Typography
-                            variant="body2"
-                            sx={{ color: BRAND.whiteSoft, lineHeight: 1.7 }}
-                          >
-                            {item}
-                          </Typography>
-                        </Box>
-                      ))}
-                    </Stack>
-                  </Stack>
-                </Box>
               ) : null}
 
               {type === "login" ? (

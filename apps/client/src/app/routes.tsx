@@ -13,11 +13,6 @@ import { AppThemedLayout } from "./layout";
 const AuthPage = lazy(() =>
   import("../pages/auth").then((module) => ({ default: module.AuthPage })),
 );
-const EmailVerificationPage = lazy(() =>
-  import("../pages/email-verification/index").then((module) => ({
-    default: module.EmailVerificationPage,
-  })),
-);
 const CustomersPage = lazy(() =>
   import("../pages/customers/index").then((module) => ({
     default: module.CustomersPage,
@@ -201,7 +196,6 @@ export const AppRoutes: React.FC = () => {
             }
           />
           <Route path="/update-password" element={<AuthPage type="updatePassword" />} />
-          <Route path="/verificacao-email" element={<EmailVerificationPage />} />
         </Route>
 
         <Route element={<AuthenticatedCatchAllRoute />}>

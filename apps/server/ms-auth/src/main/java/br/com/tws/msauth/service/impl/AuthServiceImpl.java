@@ -337,23 +337,11 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private Mono<SignupResult> createSignupResult(WorkshopEntity workshop, AuthUserEntity user) {
-        OffsetDateTime expiresAt = OffsetDateTime.now(clock).plus(emailVerificationProperties.tokenTtl());
-        String verificationCode = generateVerificationCode();
-        String tokenHash = hashToken(verificationCode);
-        EmailVerificationTokenEntity verificationToken = authFactory.newEmailVerificationToken(
-                user.getId(),
-                tokenHash,
-                expiresAt
-        );
-
-        return emailVerificationTokenRepository.deleteAllByUserId(user.getId())
-                .then(emailVerificationTokenRepository.save(verificationToken))
-                .then(emailVerificationEmailService.sendSignupVerificationEmail(workshop, user, verificationCode))
-                .thenReturn(SignupResult.builder()
-                        .workshop(workshop)
-                        .user(user)
-                        .message("Cadastro realizado. Enviamos um codigo de confirmacao para o e-mail informado.")
-                        .build());
+        return Mono.just(SignupResult.builder()
+                .workshop(workshop)
+                .user(user)
+                .message("Cadastro realizado. Agora voce ja pode entrar no sistema.")
+                .build());
     }
 
     private String generateAccessToken(WorkshopEntity workshop, AuthUserEntity user, Instant issuedAt) {
