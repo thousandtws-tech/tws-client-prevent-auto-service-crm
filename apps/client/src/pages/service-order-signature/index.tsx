@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNotification } from "@refinedev/core";
 import { useParams } from "react-router";
+import { ThemeProvider } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Paper from "@mui/material/Paper";
@@ -23,6 +24,7 @@ import {
   type SharedServiceOrderServiceStatus,
   markSharedServiceOrderAsSignedApi,
 } from "../../services/serviceOrderSignature";
+import { LightThemeWithResponsiveFontSizes } from "../../theme";
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("pt-BR", {
@@ -391,63 +393,68 @@ export const ServiceOrderSignaturePage: React.FC = () => {
 
   if (isLoadingOrder && !order) {
     return (
-      <Box
-        sx={{
-          minHeight: "100vh",
-          p: 2,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: "#f4f6f8",
-        }}
-      >
-        <Paper sx={{ p: 4, maxWidth: 520, width: "100%" }}>
-          <Stack spacing={2} alignItems="center">
-            <CircularProgress size={32} />
-            <Typography variant="h6">Carregando ordem de serviço</Typography>
-          </Stack>
-        </Paper>
-      </Box>
+      <ThemeProvider theme={LightThemeWithResponsiveFontSizes}>
+        <Box
+          sx={{
+            minHeight: "100vh",
+            p: 2,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "#f4f6f8",
+          }}
+        >
+          <Paper sx={{ p: 4, maxWidth: 520, width: "100%" }}>
+            <Stack spacing={2} alignItems="center">
+              <CircularProgress size={32} />
+              <Typography variant="h6">Carregando ordem de serviço</Typography>
+            </Stack>
+          </Paper>
+        </Box>
+      </ThemeProvider>
     );
   }
 
   if (!order) {
     return (
-      <Box
-        sx={{
-          minHeight: "100vh",
-          p: 2,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: "#f4f6f8",
-        }}
-      >
-        <Paper sx={{ p: 4, maxWidth: 520, width: "100%" }}>
-          <Stack spacing={2} alignItems="center">
-            <BuildCircleOutlinedIcon color="warning" sx={{ fontSize: 42 }} />
-            <Typography variant="h6">Link de assinatura inválido</Typography>
-            <Typography color="text.secondary" textAlign="center">
-              O link informado não foi encontrado ou expirou. Solicite um novo link
-              para a oficina.
-            </Typography>
-          </Stack>
-        </Paper>
-      </Box>
+      <ThemeProvider theme={LightThemeWithResponsiveFontSizes}>
+        <Box
+          sx={{
+            minHeight: "100vh",
+            p: 2,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "#f4f6f8",
+          }}
+        >
+          <Paper sx={{ p: 4, maxWidth: 520, width: "100%" }}>
+            <Stack spacing={2} alignItems="center">
+              <BuildCircleOutlinedIcon color="warning" sx={{ fontSize: 42 }} />
+              <Typography variant="h6">Link de assinatura inválido</Typography>
+              <Typography color="text.secondary" textAlign="center">
+                O link informado não foi encontrado ou expirou. Solicite um novo link
+                para a oficina.
+              </Typography>
+            </Stack>
+          </Paper>
+        </Box>
+      </ThemeProvider>
     );
   }
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        p: {
-          xs: 1.5,
-          sm: 3,
-        },
-        background: "linear-gradient(160deg, #f8fafc 0%, #eef2f7 100%)",
-      }}
-    >
+    <ThemeProvider theme={LightThemeWithResponsiveFontSizes}>
+      <Box
+        sx={{
+          minHeight: "100vh",
+          p: {
+            xs: 1.5,
+            sm: 3,
+          },
+          background: "linear-gradient(160deg, #f8fafc 0%, #eef2f7 100%)",
+        }}
+      >
       <Box sx={{ maxWidth: 960, mx: "auto" }}>
         <Paper
           variant="outlined"
@@ -627,7 +634,7 @@ export const ServiceOrderSignaturePage: React.FC = () => {
 
             <Stack spacing={1}>
               <Typography variant="subtitle2" fontWeight={700}>
-                Serviços / Mão de Obra
+                Serviços
               </Typography>
               {laborServicesWithDecision.length ? (
                 <Stack spacing={1}>
@@ -713,12 +720,12 @@ export const ServiceOrderSignaturePage: React.FC = () => {
                 </Stack>
               ) : (
                 <Typography variant="body2" color="text.secondary">
-                  Nenhum serviço de mão de obra cadastrado.
+                  Nenhum serviço cadastrado.
                 </Typography>
               )}
               {declinedLaborServicesCount ? (
                 <Typography variant="caption" color="warning.main">
-                  {declinedLaborServicesCount} serviço(s) de mão de obra recusado(s).
+                  {declinedLaborServicesCount} serviço(s) recusado(s).
                 </Typography>
               ) : null}
             </Stack>
@@ -834,7 +841,7 @@ export const ServiceOrderSignaturePage: React.FC = () => {
                 <Typography variant="body2">{formatCurrency(partsSubtotal)}</Typography>
               </Stack>
               <Stack direction="row" justifyContent="space-between">
-                <Typography variant="body2">Subtotal Mão de Obra</Typography>
+                <Typography variant="body2">Subtotal Serviços</Typography>
                 <Typography variant="body2">{formatCurrency(laborSubtotal)}</Typography>
               </Stack>
               <Stack direction="row" justifyContent="space-between">
@@ -923,5 +930,6 @@ export const ServiceOrderSignaturePage: React.FC = () => {
         </Paper>
       </Box>
     </Box>
+    </ThemeProvider>
   );
 };

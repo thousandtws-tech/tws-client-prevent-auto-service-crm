@@ -13,7 +13,7 @@ import { useAppNotificationProvider } from "./providers/notificationProvider";
 import { appDataProviders } from "./app/dataProviders";
 import { useAppBootstrap } from "./app/bootstrap";
 import { AppRoutes } from "./app/routes";
-import { PwaInstallPrompt } from "./components";
+import { NotificationModalHost, PwaInstallPrompt } from "./components";
 
 const REFINE_OPTIONS = {
   syncWithLocation: true,
@@ -44,6 +44,7 @@ const App: React.FC = () => {
             resources={resources}
           >
             <AppRoutes />
+            <NotificationModalHost />
             <PwaInstallPrompt />
             <UnsavedChangesNotifier />
             <DocumentTitleHandler handler={documentTitleHandler} />

@@ -6,3 +6,4 @@ export * from "./refine-list-view";
 export * from "./expandable-text";
 export * from "./company-banner";
 export * from "./pwa-install-prompt";
+export * from "./notification-modal-host";

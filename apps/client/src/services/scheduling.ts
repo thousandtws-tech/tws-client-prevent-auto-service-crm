@@ -248,6 +248,14 @@ const extractArrayData = (value: unknown): unknown[] => {
     return (value as Record<string, unknown>).data as unknown[];
   }
 
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    Array.isArray((value as Record<string, unknown>).content)
+  ) {
+    return (value as Record<string, unknown>).content as unknown[];
+  }
+
   return [];
 };
 
@@ -449,7 +457,13 @@ export const listSchedulingAppointmentsApi = async (): Promise<
     return readSchedulingAppointments();
   }
 
-  const response = await requestJson<unknown>("scheduling/appointments", {
+  const searchParams = new URLSearchParams({
+    page: "0",
+    size: "100",
+    sort: "startAt,asc",
+  });
+
+  const response = await requestJson<unknown>(`scheduling/appointments?${searchParams.toString()}`, {
     method: "GET",
   });
   const normalized = normalizeAppointments(extractArrayData(response));

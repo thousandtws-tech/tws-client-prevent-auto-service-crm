@@ -616,7 +616,7 @@ export const ServiceOrderHistoryPage: React.FC = () => {
                   <TableCell>Cliente</TableCell>
                   <TableCell>Veículo / Placa</TableCell>
                   <TableCell align="right">Peças</TableCell>
-                  <TableCell align="right">Mão de Obra</TableCell>
+                  <TableCell align="right">Serviços</TableCell>
                   <TableCell align="right">Terceiros</TableCell>
                   <TableCell align="right">Desconto</TableCell>
                   <TableCell align="right">Recusado</TableCell>
@@ -816,7 +816,14 @@ export const ServiceOrderHistoryPage: React.FC = () => {
                         <TableCell>{formatCurrency(row.totals.grandTotal)}</TableCell>
                         <TableCell>{formatDate(row.updatedAt)}</TableCell>
                         <TableCell align="right">
-                          <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                          <Stack
+                            direction="row"
+                            spacing={0.75}
+                            alignItems="center"
+                            justifyContent="flex-end"
+                            flexWrap="wrap"
+                            useFlexGap
+                          >
                             <Button
                               size="small"
                               variant="text"
@@ -826,6 +833,8 @@ export const ServiceOrderHistoryPage: React.FC = () => {
                               sx={{
                                 textTransform: "none",
                                 whiteSpace: "nowrap",
+                                minHeight: 32,
+                                alignItems: "center",
                               }}
                             >
                               Ver detalhes
@@ -848,6 +857,8 @@ export const ServiceOrderHistoryPage: React.FC = () => {
                               sx={{
                                 textTransform: "none",
                                 whiteSpace: "nowrap",
+                                minHeight: 32,
+                                alignItems: "center",
                               }}
                             >
                               {deletingOrderId === row.id ? "Excluindo..." : "Excluir"}
@@ -995,7 +1006,7 @@ export const ServiceOrderHistoryPage: React.FC = () => {
               </Stack>
 
               <Stack spacing={1}>
-                <Typography fontWeight={700}>Serviços / Mão de Obra</Typography>
+                <Typography fontWeight={700}>Serviços</Typography>
                 {selectedRow.laborServices.length ? (
                   selectedRow.laborServices.map((service) => (
                     <Typography key={service.id} variant="body2">

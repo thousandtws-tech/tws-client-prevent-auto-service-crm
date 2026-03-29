@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type HTMLAttributes, type Key } from "react";
 import { useNotification, useTranslate } from "@refinedev/core";
 import Grid from "@mui/material/Grid2";
 import Box from "@mui/material/Box";
@@ -25,7 +25,7 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import IconButton from "@mui/material/IconButton";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import { useTheme } from "@mui/material/styles";
+import { alpha, useTheme } from "@mui/material/styles";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -92,6 +92,12 @@ import {
   listServiceOrderChecklists,
   type ServiceOrderChecklistItem,
 } from "../../services/serviceOrderChecklists";
+import {
+  MECHANICS_STORAGE_KEY,
+  MECHANICS_UPDATED_EVENT,
+  listMechanics,
+  type Mechanic,
+} from "../../services/mechanics";
 import { useNavigate, useSearchParams } from "react-router";
 import type { ChecklistState, OrderInfo, PartItem, ServiceItem } from "../../interfaces";
 
@@ -155,6 +161,18 @@ const formatDateInputFromIso = (value: string) => {
   const month = String(parsed.getMonth() + 1).padStart(2, "0");
   const day = String(parsed.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+};
+
+const getTodayDateInput = () => formatDateInputFromIso(new Date().toISOString());
+
+const generateServiceOrderNumber = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const hour = String(now.getHours()).padStart(2, "0");
+  const minute = String(now.getMinutes()).padStart(2, "0");
+  return `OS-${year}${month}${day}-${hour}${minute}`;
 };
 
 const formatChecklistLabel = (key: string) =>
@@ -405,6 +423,17 @@ export const ServiceOrderPage: React.FC = () => {
   const [registeredChecklists, setRegisteredChecklists] = useState<
     ServiceOrderChecklistItem[]
   >([]);
+  const [registeredMechanics, setRegisteredMechanics] = useState<Mechanic[]>([]);
+
+  useEffect(() => {
+    setOrderInfo((previous) => ({
+      ...previous,
+      orderNumber: previous.orderNumber.trim()
+        ? previous.orderNumber
+        : generateServiceOrderNumber(),
+      date: previous.date.trim() ? previous.date : getTodayDateInput(),
+    }));
+  }, []);
 
   useEffect(() => {
     const handleSettingsUpdate: EventListener = (event) => {
@@ -422,6 +451,20 @@ export const ServiceOrderPage: React.FC = () => {
       window.removeEventListener(APP_SETTINGS_UPDATED_EVENT, handleSettingsUpdate);
     };
   }, []);
+
+  const reviewLogoSrc = useMemo(() => {
+    const normalized = sidebarLogoUrl?.trim() ?? "";
+
+    if (!normalized) {
+      return "/logo-preto.svg";
+    }
+
+    if (normalized === "/logo-branco.svg") {
+      return "/logo-preto.svg";
+    }
+
+    return normalized;
+  }, [sidebarLogoUrl]);
 
   const loadRegisteredCustomers = async (showError = false) => {
     try {
@@ -501,7 +544,7 @@ export const ServiceOrderPage: React.FC = () => {
           : "Erro inesperado";
       open?.({
         type: "error",
-        message: "Falha ao carregar mão de obra cadastrada",
+        message: "Falha ao carregar serviços cadastrados",
         description: message,
       });
     }
@@ -509,6 +552,32 @@ export const ServiceOrderPage: React.FC = () => {
 
   const loadRegisteredChecklists = () => {
     setRegisteredChecklists(listServiceOrderChecklists());
+  };
+
+  const loadRegisteredMechanics = async (showError = false) => {
+    try {
+      const response = await listMechanics({
+        page: 0,
+        size: 100,
+        sort: "name,asc",
+        status: "active",
+      });
+      setRegisteredMechanics(response.filter((item) => item.status === "active"));
+    } catch (error) {
+      if (!showError) {
+        return;
+      }
+
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "Erro inesperado";
+      open?.({
+        type: "error",
+        message: "Falha ao carregar mecânicos",
+        description: message,
+      });
+    }
   };
 
   useEffect(() => {
@@ -526,6 +595,10 @@ export const ServiceOrderPage: React.FC = () => {
 
   useEffect(() => {
     loadRegisteredChecklists();
+  }, []);
+
+  useEffect(() => {
+    void loadRegisteredMechanics(true);
   }, []);
 
   useEffect(() => {
@@ -642,6 +715,30 @@ export const ServiceOrderPage: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const refreshMechanics = () => {
+      void loadRegisteredMechanics();
+    };
+
+    const handleMechanicsUpdated: EventListener = () => {
+      refreshMechanics();
+    };
+
+    const handleStorageUpdate = (event: StorageEvent) => {
+      if (!event.key || event.key === MECHANICS_STORAGE_KEY) {
+        refreshMechanics();
+      }
+    };
+
+    window.addEventListener(MECHANICS_UPDATED_EVENT, handleMechanicsUpdated);
+    window.addEventListener("storage", handleStorageUpdate);
+
+    return () => {
+      window.removeEventListener(MECHANICS_UPDATED_EVENT, handleMechanicsUpdated);
+      window.removeEventListener("storage", handleStorageUpdate);
+    };
+  }, []);
+
   const activeCustomers = useMemo(
     () => registeredCustomers.filter((customer) => customer.status === "active"),
     [registeredCustomers],
@@ -674,6 +771,23 @@ export const ServiceOrderPage: React.FC = () => {
       registeredLaborCatalogItems.filter((item) => item.status === "active"),
     [registeredLaborCatalogItems],
   );
+  const activeMechanics = useMemo(
+    () => registeredMechanics.filter((mechanic) => mechanic.status === "active"),
+    [registeredMechanics],
+  );
+
+  const selectedMechanic = useMemo(() => {
+    const normalized = orderInfo.mechanicResponsible.trim().toLowerCase();
+    if (!normalized) {
+      return null;
+    }
+
+    return (
+      activeMechanics.find(
+        (mechanic) => mechanic.name.trim().toLowerCase() === normalized,
+      ) ?? null
+    );
+  }, [activeMechanics, orderInfo.mechanicResponsible]);
   const checklistEntries = useMemo(
     () => buildChecklistEntries(registeredChecklists, checklist),
     [registeredChecklists, checklist],
@@ -1180,6 +1294,26 @@ export const ServiceOrderPage: React.FC = () => {
   };
 
   const handleConfirmServiceOrder = async () => {
+    if (!orderInfo.orderNumber.trim()) {
+      open?.({ type: "error", message: "Informe o Nº da OS" });
+      return;
+    }
+
+    if (!orderInfo.date.trim()) {
+      open?.({ type: "error", message: "Informe a data da OS" });
+      return;
+    }
+
+    if (!orderInfo.customerName.trim()) {
+      open?.({ type: "error", message: "Informe o nome do cliente" });
+      return;
+    }
+
+    if (!orderInfo.mechanicResponsible.trim()) {
+      open?.({ type: "error", message: "Selecione o mecânico responsável" });
+      return;
+    }
+
     try {
       setIsSavingServiceOrder(true);
 
@@ -1268,6 +1402,21 @@ export const ServiceOrderPage: React.FC = () => {
       });
       closeReview();
     } catch (error) {
+      const status =
+        typeof error === "object" && error !== null && "status" in error
+          ? Number((error as { status?: unknown }).status)
+          : undefined;
+
+      if (status === 401) {
+        open?.({
+          type: "error",
+          message: "Sessão expirada",
+          description: "Faça login novamente para cadastrar a ordem de serviço.",
+        });
+        navigate("/login");
+        return;
+      }
+
       open?.({
         type: "error",
         message: "Erro ao cadastrar ordem de serviço",
@@ -1384,7 +1533,7 @@ export const ServiceOrderPage: React.FC = () => {
             variant="outlined"
             onClick={() => navigate("/ordem-servico/mao-de-obra")}
           >
-            Cad. Mão de Obra
+            Cad. Serviços
           </Button>
           <Button
             size="small"
@@ -1443,6 +1592,7 @@ export const ServiceOrderPage: React.FC = () => {
                     label="Nº OS"
                     value={orderInfo.orderNumber}
                     onChange={handleOrderInfoChange("orderNumber")}
+                    required
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 4 }}>
@@ -1463,6 +1613,7 @@ export const ServiceOrderPage: React.FC = () => {
                         textField: {
                           fullWidth: true,
                           size: "small",
+                          required: true,
                         },
                       }}
                     />
@@ -1487,19 +1638,25 @@ export const ServiceOrderPage: React.FC = () => {
                     }
                     isOptionEqualToValue={(option, value) => option.id === value.id}
                     noOptionsText="Nenhum cliente ativo cadastrado"
-                    renderOption={(props, customer) => (
-                      <Box component="li" {...props}>
-                        <Stack spacing={0.2}>
-                          <Typography variant="body2" fontWeight={600}>
-                            {customer.name}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {customer.phone || "-"} • {customer.vehicleModel || "-"} •{" "}
-                            {customer.vehiclePlate || "-"}
-                          </Typography>
-                        </Stack>
-                      </Box>
-                    )}
+                    renderOption={(optionProps, customer) => {
+                      const { key, ...liProps } = optionProps as HTMLAttributes<HTMLLIElement> & {
+                        key: Key;
+                      };
+
+                      return (
+                        <Box component="li" key={key} {...liProps}>
+                          <Stack spacing={0.2}>
+                            <Typography variant="body2" fontWeight={600}>
+                              {customer.name}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {customer.phone || "-"} • {customer.vehicleModel || "-"} •{" "}
+                              {customer.vehiclePlate || "-"}
+                            </Typography>
+                          </Stack>
+                        </Box>
+                      );
+                    }}
                     renderInput={(params) => (
                       <TextField
                         {...params}
@@ -1517,6 +1674,7 @@ export const ServiceOrderPage: React.FC = () => {
                     label="Cliente"
                     value={orderInfo.customerName}
                     onChange={handleOrderInfoChange("customerName")}
+                    required
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
@@ -1538,23 +1696,29 @@ export const ServiceOrderPage: React.FC = () => {
                     }
                     isOptionEqualToValue={(option, value) => option.id === value.id}
                     noOptionsText="Nenhum veículo ativo cadastrado"
-                    renderOption={(props, vehicle) => (
-                      <Box component="li" {...props}>
-                        <Stack spacing={0.2}>
-                          <Typography variant="body2" fontWeight={600}>
-                            {vehicle.vehicleModel}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {vehicle.vehicleBrand || "-"} •{" "}
-                            {formatVehicleNumericField(vehicle.vehicleYear) || "-"} •{" "}
-                            {vehicle.vehiclePlate || "-"} •{" "}
-                            {formatVehicleNumericField(vehicle.vehicleMileage)
-                              ? `${formatVehicleNumericField(vehicle.vehicleMileage)} km`
-                              : "KM não informado"}
-                          </Typography>
-                        </Stack>
-                      </Box>
-                    )}
+                    renderOption={(optionProps, vehicle) => {
+                      const { key, ...liProps } = optionProps as HTMLAttributes<HTMLLIElement> & {
+                        key: Key;
+                      };
+
+                      return (
+                        <Box component="li" key={key} {...liProps}>
+                          <Stack spacing={0.2}>
+                            <Typography variant="body2" fontWeight={600}>
+                              {vehicle.vehicleModel}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {vehicle.vehicleBrand || "-"} •{" "}
+                              {formatVehicleNumericField(vehicle.vehicleYear) || "-"} •{" "}
+                              {vehicle.vehiclePlate || "-"} •{" "}
+                              {formatVehicleNumericField(vehicle.vehicleMileage)
+                                ? `${formatVehicleNumericField(vehicle.vehicleMileage)} km`
+                                : "KM não informado"}
+                            </Typography>
+                          </Stack>
+                        </Box>
+                      );
+                    }}
                     renderInput={(params) => (
                       <TextField
                         {...params}
@@ -1593,13 +1757,59 @@ export const ServiceOrderPage: React.FC = () => {
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="Mecânico responsável"
-                    value={orderInfo.mechanicResponsible}
-                    onChange={handleOrderInfoChange("mechanicResponsible")}
-                  />
+                  <Stack spacing={0.75}>
+                    <Autocomplete
+                      fullWidth
+                      options={activeMechanics}
+                      value={selectedMechanic}
+                      onChange={(_, mechanic) =>
+                        setOrderInfo((previous) => ({
+                          ...previous,
+                          mechanicResponsible: mechanic?.name ?? "",
+                        }))
+                      }
+                      getOptionLabel={(mechanic) => mechanic.name}
+                      isOptionEqualToValue={(option, value) => option.id === value.id}
+                      noOptionsText="Cadastre um mecânico para selecionar"
+                      renderOption={(optionProps, mechanic) => {
+                        const { key, ...liProps } = optionProps as HTMLAttributes<HTMLLIElement> & {
+                          key: Key;
+                        };
+
+                        return (
+                          <Box component="li" key={key} {...liProps}>
+                            <Stack spacing={0.2}>
+                              <Typography variant="body2" fontWeight={700}>
+                                {mechanic.name}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {mechanic.phone || "-"} • {mechanic.email || "-"}
+                              </Typography>
+                            </Stack>
+                          </Box>
+                        );
+                      }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          fullWidth
+                          size="small"
+                          label="Mecânico responsável"
+                          placeholder="Selecione um mecânico"
+                          required
+                        />
+                      )}
+                    />
+                    {!activeMechanics.length ? (
+                      <Button
+                        size="small"
+                        variant="text"
+                        onClick={() => navigate("/ordem-servico/mecanicos")}
+                      >
+                        Cadastrar mecânico responsável
+                      </Button>
+                    ) : null}
+                  </Stack>
                 </Grid>
               </Grid>
             </Card>
@@ -1746,7 +1956,7 @@ export const ServiceOrderPage: React.FC = () => {
 
               <Grid size={{ xs: 12, md: 6 }}>
                 <Card
-                  title={t("serviceOrder.labor", "Serviços / Mão de Obra")}
+                  title={t("serviceOrder.labor", "Serviços")}
                   icon={<HandymanOutlinedIcon />}
                   cardHeaderProps={{
                     action: (
@@ -2013,7 +2223,7 @@ export const ServiceOrderPage: React.FC = () => {
                         <Typography>{formatCurrency(partsSubtotal)}</Typography>
                       </Stack>
                       <Stack direction="row" justifyContent="space-between">
-                        <Typography color="text.secondary">Mão de Obra</Typography>
+                        <Typography color="text.secondary">Serviços</Typography>
                         <Typography>{formatCurrency(laborSubtotal)}</Typography>
                       </Stack>
                       <Stack direction="row" justifyContent="space-between">
@@ -2101,18 +2311,24 @@ export const ServiceOrderPage: React.FC = () => {
                   }
                   isOptionEqualToValue={(option, value) => option.id === value.id}
                   noOptionsText="Nenhuma peça ativa cadastrada"
-                  renderOption={(props, item) => (
-                    <Box component="li" {...props}>
-                      <Stack spacing={0.2}>
-                        <Typography variant="body2" fontWeight={600}>
-                          {item.description}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {item.code || "Sem código"} • {formatCurrency(item.defaultPrice)}
-                        </Typography>
-                      </Stack>
-                    </Box>
-                  )}
+                  renderOption={(optionProps, item) => {
+                    const { key, ...liProps } = optionProps as HTMLAttributes<HTMLLIElement> & {
+                      key: Key;
+                    };
+
+                    return (
+                      <Box component="li" key={key} {...liProps}>
+                        <Stack spacing={0.2}>
+                          <Typography variant="body2" fontWeight={600}>
+                            {item.description}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {item.code || "Sem código"} • {formatCurrency(item.defaultPrice)}
+                          </Typography>
+                        </Stack>
+                      </Box>
+                    );
+                  }}
                   renderInput={(params) => (
                     <TextField
                       {...params}
@@ -2335,7 +2551,7 @@ export const ServiceOrderPage: React.FC = () => {
         fullWidth
         maxWidth="lg"
       >
-        <DialogTitle>Serviços / Mão de Obra</DialogTitle>
+        <DialogTitle>Serviços</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2.5}>
             <Grid container columns={12} spacing={1.5}>
@@ -2348,24 +2564,30 @@ export const ServiceOrderPage: React.FC = () => {
                     `${item.description} • ${formatCurrency(item.defaultPrice)}`
                   }
                   isOptionEqualToValue={(option, value) => option.id === value.id}
-                  noOptionsText="Nenhuma mão de obra ativa cadastrada"
-                  renderOption={(props, item) => (
-                    <Box component="li" {...props}>
-                      <Stack spacing={0.2}>
-                        <Typography variant="body2" fontWeight={600}>
-                          {item.description}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {item.code || "Sem código"} • {formatCurrency(item.defaultPrice)}
-                        </Typography>
-                      </Stack>
-                    </Box>
-                  )}
+                  noOptionsText="Nenhum serviço ativo cadastrado"
+                  renderOption={(optionProps, item) => {
+                    const { key, ...liProps } = optionProps as HTMLAttributes<HTMLLIElement> & {
+                      key: Key;
+                    };
+
+                    return (
+                      <Box component="li" key={key} {...liProps}>
+                        <Stack spacing={0.2}>
+                          <Typography variant="body2" fontWeight={600}>
+                            {item.description}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {item.code || "Sem código"} • {formatCurrency(item.defaultPrice)}
+                          </Typography>
+                        </Stack>
+                      </Box>
+                    );
+                  }}
                   renderInput={(params) => (
                     <TextField
                       {...params}
                       size="small"
-                      label="Adicionar mão de obra do cadastro"
+                      label="Adicionar serviço do cadastro"
                       placeholder="Selecione um serviço cadastrado"
                     />
                   )}
@@ -2532,7 +2754,7 @@ export const ServiceOrderPage: React.FC = () => {
                     <TableRow>
                       <TableCell colSpan={4}>
                         <Typography variant="body2" color="text.secondary">
-                          Nenhum serviço de mão de obra adicionado.
+                          Nenhum serviço adicionado.
                         </Typography>
                       </TableCell>
                     </TableRow>
@@ -2837,21 +3059,25 @@ export const ServiceOrderPage: React.FC = () => {
               p: 3,
               borderRadius: 2.5,
               backgroundColor: "#fff",
-              color: "#111827",
-              borderColor: "rgba(17, 24, 39, 0.18)",
+              color: "#0b0b0f",
+              borderColor: alpha(theme.palette.primary.main, 0.28),
+              "& .MuiPaper-root": {
+                backgroundColor: "#fff",
+                backgroundImage: "none",
+              },
               "& .MuiTypography-root": {
-                color: "#111827",
+                color: "#0b0b0f",
               },
               "& .MuiTypography-colorTextSecondary": {
-                color: "#6b7280",
+                color: alpha("#0b0b0f", 0.62),
               },
               "& .MuiDivider-root": {
-                borderColor: "rgba(17, 24, 39, 0.18)",
+                borderColor: alpha(theme.palette.primary.main, 0.22),
               },
               "& .MuiChip-root": {
-                color: "#111827",
-                borderColor: "rgba(17, 24, 39, 0.2)",
-                backgroundColor: "#f8fafc",
+                color: "#0b0b0f",
+                borderColor: alpha(theme.palette.primary.main, 0.26),
+                backgroundColor: alpha(theme.palette.primary.main, 0.08),
               },
             }}
           >
@@ -2864,24 +3090,20 @@ export const ServiceOrderPage: React.FC = () => {
                       height: 68,
                       borderRadius: 1.5,
                       border: "1px solid",
-                      borderColor: "rgba(17, 24, 39, 0.2)",
+                      borderColor: alpha(theme.palette.primary.main, 0.24),
                       overflow: "hidden",
-                      backgroundColor: "#fafafa",
+                      backgroundColor: alpha(theme.palette.primary.main, 0.06),
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                     }}
                   >
-                    {sidebarLogoUrl ? (
-                      <Box
-                        component="img"
-                        src={sidebarLogoUrl}
-                        alt="Logo da oficina"
-                        sx={{ width: "100%", height: "100%", objectFit: "contain" }}
-                      />
-                    ) : (
-                      <BuildCircleOutlinedIcon sx={{ color: "#6b7280" }} />
-                    )}
+                    <Box
+                      component="img"
+                      src={reviewLogoSrc}
+                      alt="Logo Prevent Auto Mecânica"
+                      sx={{ width: "100%", height: "100%", objectFit: "contain", p: 1 }}
+                    />
                   </Box>
                   <Box>
                     <Typography fontWeight={700}>ORDEM DE SERVIÇO</Typography>
@@ -3020,7 +3242,7 @@ export const ServiceOrderPage: React.FC = () => {
               <Grid container columns={12} spacing={2}>
                 <Grid size={6}>
                   <Typography fontWeight={700} gutterBottom>
-                    SERVIÇOS / MÃO DE OBRA
+                    SERVIÇOS
                   </Typography>
                   <Stack spacing={0.6}>
                     {laborServices.map((service) => {
@@ -3121,7 +3343,7 @@ export const ServiceOrderPage: React.FC = () => {
                   <Typography variant="body2">{formatCurrency(partsSubtotal)}</Typography>
                 </Stack>
                 <Stack direction="row" justifyContent="space-between">
-                  <Typography variant="body2">Subtotal Mão de Obra</Typography>
+                  <Typography variant="body2">Subtotal Serviços</Typography>
                   <Typography variant="body2">{formatCurrency(laborSubtotal)}</Typography>
                 </Stack>
                 <Stack direction="row" justifyContent="space-between">
@@ -3167,6 +3389,8 @@ export const ServiceOrderPage: React.FC = () => {
                           sx={{
                             p: 1,
                             borderRadius: 1.5,
+                            backgroundColor: "#fff",
+                            borderColor: alpha(theme.palette.primary.main, 0.18),
                           }}
                         >
                           <Typography variant="body2" noWrap title={file.name}>

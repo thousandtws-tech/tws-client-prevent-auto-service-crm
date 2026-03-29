@@ -102,6 +102,8 @@ const getErrorMessage = (error: unknown) => {
   return "Erro inesperado";
 };
 
+const onlyDigits = (value: string) => value.replace(/\D/g, "");
+
 const hasVehicleData = (formState: CustomerFormState) =>
   Boolean(
     formState.vehicleModel.trim() ||
@@ -319,18 +321,39 @@ export const CustomersPage: React.FC = () => {
       return "Informe o nome do cliente";
     }
 
+    if (formState.name.trim().length < 5) {
+      return "Nome do cliente deve ter pelo menos 5 caracteres";
+    }
+
     if (!formState.phone.trim()) {
       return "Informe o telefone do cliente";
+    }
+
+    if (customersBackendEnabled) {
+      const phoneDigits = onlyDigits(formState.phone);
+      if (phoneDigits.length < 10 || phoneDigits.length > 13) {
+        return "Informe um telefone válido (DDD + número)";
+      }
     }
 
     if (customersBackendEnabled && !formState.document.trim()) {
       return "Informe o CPF/CNPJ do cliente";
     }
 
+    if (customersBackendEnabled && formState.document.trim()) {
+      const documentDigits = onlyDigits(formState.document);
+      if (documentDigits.length !== 11 && documentDigits.length !== 14) {
+        return "Informe um CPF/CNPJ válido";
+      }
+    }
+
     if (formState.email.trim()) {
       const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailPattern.test(formState.email.trim())) {
         return "Informe um e-mail válido";
+      }
+      if (formState.email.trim().length > 120) {
+        return "E-mail deve ter no máximo 120 caracteres";
       }
     } else if (customersBackendEnabled) {
       return "Informe o e-mail do cliente";
@@ -370,6 +393,8 @@ export const CustomersPage: React.FC = () => {
       if (!formState.uf.trim()) {
         return "Informe a UF do cliente";
       }
+    } else if (customersBackendEnabled && formState.address.trim().length < 5) {
+      return "Endereço deve ter pelo menos 5 caracteres";
     } else if (!formState.address.trim()) {
       return "Informe o endereço completo do cliente";
     }
@@ -389,6 +414,10 @@ export const CustomersPage: React.FC = () => {
 
       if (!formState.vehicleChassisNumber.trim()) {
         return "Informe o chassi do veículo";
+      }
+
+      if (customersBackendEnabled && formState.vehicleChassisNumber.trim().length !== 17) {
+        return "Chassi deve ter 17 caracteres";
       }
 
       if ((Number(formState.vehicleYear) || 0) < 1900) {
@@ -1021,7 +1050,7 @@ export const CustomersPage: React.FC = () => {
 
                 <Divider />
 
-                <Stack direction="row" spacing={1.2}>
+                <Stack direction="row" spacing={1.6} >
                   <Button
                     type="submit"
                     variant="contained"

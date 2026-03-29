@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState, type HTMLAttributes, type Key } from "react";
 import { useNotification, useTranslate } from "@refinedev/core";
 import Grid from "@mui/material/Grid2";
 import Stack from "@mui/material/Stack";
@@ -7,6 +7,8 @@ import Autocomplete from "@mui/material/Autocomplete";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import Divider from "@mui/material/Divider";
+import Drawer from "@mui/material/Drawer";
+import IconButton from "@mui/material/IconButton";
 import MenuItem from "@mui/material/MenuItem";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -59,8 +61,13 @@ import {
   listLaborCatalogItemsApi,
   type ServiceOrderCatalogItem,
 } from "../../services/serviceOrderCatalog";
+import {
+  MECHANICS_STORAGE_KEY,
+  MECHANICS_UPDATED_EVENT,
+  listMechanics,
+  type Mechanic,
+} from "../../services/mechanics";
 import type { SchedulingFormState } from "../../interfaces";
-
 
 const DURATION_OPTIONS = [30, 45, 60, 90, 120];
 const SERVICE_TYPE_OPTIONS = [
@@ -261,10 +268,12 @@ export const SchedulingPage: React.FC = () => {
   const [registeredLaborItems, setRegisteredLaborItems] = useState<
     ServiceOrderCatalogItem[]
   >([]);
+  const [registeredMechanics, setRegisteredMechanics] = useState<Mechanic[]>([]);
   const [mechanicFilter, setMechanicFilter] = useState("");
   const [weekStartDate, setWeekStartDate] = useState(() =>
     getStartOfWeek(new Date()),
   );
+  const [isAppointmentDrawerOpen, setIsAppointmentDrawerOpen] = useState(false);
 
   const isEditingAppointment = Boolean(editingAppointmentId);
 
@@ -306,7 +315,27 @@ export const SchedulingPage: React.FC = () => {
       if (showError) {
         open?.({
           type: "error",
-          message: "Falha ao carregar mão de obra",
+          message: "Falha ao carregar serviços",
+          description: getErrorMessage(error),
+        });
+      }
+    }
+  };
+
+  const loadMechanics = async (showError = false) => {
+    try {
+      const response = await listMechanics({
+        page: 0,
+        size: 100,
+        sort: "name,asc",
+        status: "active",
+      });
+      setRegisteredMechanics(response.filter((item) => item.status === "active"));
+    } catch (error) {
+      if (showError) {
+        open?.({
+          type: "error",
+          message: "Falha ao carregar mecânicos",
           description: getErrorMessage(error),
         });
       }
@@ -317,6 +346,7 @@ export const SchedulingPage: React.FC = () => {
     void loadCustomers(true);
     void loadAppointments(true);
     void loadLaborItems(true);
+    void loadMechanics(true);
   }, []);
 
   useEffect(() => {
@@ -405,6 +435,30 @@ export const SchedulingPage: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const refreshMechanics = () => {
+      void loadMechanics();
+    };
+
+    const handleMechanicsUpdated: EventListener = () => {
+      refreshMechanics();
+    };
+
+    const handleStorageUpdate = (event: StorageEvent) => {
+      if (!event.key || event.key === MECHANICS_STORAGE_KEY) {
+        refreshMechanics();
+      }
+    };
+
+    window.addEventListener(MECHANICS_UPDATED_EVENT, handleMechanicsUpdated);
+    window.addEventListener("storage", handleStorageUpdate);
+
+    return () => {
+      window.removeEventListener(MECHANICS_UPDATED_EVENT, handleMechanicsUpdated);
+      window.removeEventListener("storage", handleStorageUpdate);
+    };
+  }, []);
+
   const activeCustomers = useMemo(
     () => registeredCustomers.filter((customer) => customer.status === "active"),
     [registeredCustomers],
@@ -421,6 +475,23 @@ export const SchedulingPage: React.FC = () => {
     () => registeredLaborItems.filter((item) => item.status === "active"),
     [registeredLaborItems],
   );
+  const activeMechanics = useMemo(
+    () => registeredMechanics.filter((mechanic) => mechanic.status === "active"),
+    [registeredMechanics],
+  );
+
+  const selectedMechanic = useMemo(() => {
+    const normalized = formState.mechanicResponsible.trim().toLowerCase();
+    if (!normalized) {
+      return null;
+    }
+
+    return (
+      activeMechanics.find(
+        (mechanic) => mechanic.name.trim().toLowerCase() === normalized,
+      ) ?? null
+    );
+  }, [activeMechanics, formState.mechanicResponsible]);
 
   const serviceOptions = useMemo(() => {
     if (activeLaborItems.length) {
@@ -494,17 +565,18 @@ export const SchedulingPage: React.FC = () => {
     });
   }, [appointments, editingAppointmentId, formState.mechanicResponsible]);
 
-  const mechanicOptions = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          appointments
-            .map((appointment) => appointment.mechanicResponsible.trim())
-            .filter(Boolean),
-        ),
-      ).sort((left, right) => left.localeCompare(right, "pt-BR")),
-    [appointments],
-  );
+  const mechanicOptions = useMemo(() => {
+    const fromRegistry = registeredMechanics
+      .map((item) => item.name.trim())
+      .filter(Boolean);
+    const fromAppointments = appointments
+      .map((appointment) => appointment.mechanicResponsible.trim())
+      .filter(Boolean);
+
+    return Array.from(new Set([...fromRegistry, ...fromAppointments])).sort(
+      (left, right) => left.localeCompare(right, "pt-BR"),
+    );
+  }, [appointments, registeredMechanics]);
 
   const filteredAppointments = useMemo(() => {
     const normalizedFilter = mechanicFilter.trim().toLowerCase();
@@ -552,7 +624,7 @@ export const SchedulingPage: React.FC = () => {
     }
 
     if (!formState.mechanicResponsible.trim()) {
-      return "Informe o mecânico responsável";
+      return "Selecione o mecânico responsável";
     }
 
     if (formState.customerEmail.trim()) {
@@ -585,7 +657,7 @@ export const SchedulingPage: React.FC = () => {
     );
 
     if (conflicts) {
-      return "Este horário está bloqueado para a duração da mão de obra selecionada";
+      return "Este horário está bloqueado para a duração do serviço selecionado";
     }
 
     return null;
@@ -606,6 +678,16 @@ export const SchedulingPage: React.FC = () => {
   const resetAppointmentForm = () => {
     setEditingAppointmentId(null);
     setFormState(getDefaultFormState());
+  };
+
+  const handleOpenNewAppointment = () => {
+    resetAppointmentForm();
+    setIsAppointmentDrawerOpen(true);
+  };
+
+  const handleCloseAppointmentDrawer = () => {
+    setIsAppointmentDrawerOpen(false);
+    resetAppointmentForm();
   };
 
   const handleEditAppointment = (appointment: SchedulingAppointment) => {
@@ -630,8 +712,7 @@ export const SchedulingPage: React.FC = () => {
       durationMinutes: appointment.schedule.durationMinutes,
       notes: appointment.schedule.notes,
     });
-
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setIsAppointmentDrawerOpen(true);
   };
 
   const handleCreateAppointment = async (
@@ -691,7 +772,7 @@ export const SchedulingPage: React.FC = () => {
           type: "success",
           message: "Agendamento atualizado com sucesso",
         });
-        resetAppointmentForm();
+        handleCloseAppointmentDrawer();
       } catch (error) {
         open?.({
           type: "error",
@@ -733,7 +814,7 @@ export const SchedulingPage: React.FC = () => {
       type: "success",
       message: "Agendamento salvo com sucesso",
     });
-    resetAppointmentForm();
+    handleCloseAppointmentDrawer();
   };
 
   const handleCreateServiceOrder = (appointment: SchedulingAppointment) => {
@@ -781,7 +862,7 @@ export const SchedulingPage: React.FC = () => {
       });
 
       if (editingAppointmentId === appointment.id) {
-        resetAppointmentForm();
+        handleCloseAppointmentDrawer();
       }
     } catch (error) {
       open?.({
@@ -809,7 +890,7 @@ export const SchedulingPage: React.FC = () => {
       setIsClearingHistory(true);
       await clearSchedulingAppointmentsApi();
       await loadAppointments();
-      resetAppointmentForm();
+      handleCloseAppointmentDrawer();
 
       open?.({
         type: "success",
@@ -832,6 +913,15 @@ export const SchedulingPage: React.FC = () => {
       title={t("scheduling.title", "Agendamentos")}
       headerButtons={() => (
         <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+          <Button
+            size="small"
+            variant="contained"
+            onClick={handleOpenNewAppointment}
+            startIcon={<CalendarMonthOutlinedIcon fontSize="small" />}
+            sx={{ textTransform: "none" }}
+          >
+            Novo agendamento
+          </Button>
           <Button
             size="small"
             variant="outlined"
@@ -867,16 +957,58 @@ export const SchedulingPage: React.FC = () => {
       )}
     >
       <Grid container columns={12} spacing={3}>
-        <Grid size={{ xs: 12, md: 12 }}>
-          <Box sx={{ width: "100%" }}>
-            <Card
-              title={isEditingAppointment ? "Editar agendamento" : "Novo agendamento"}
-              icon={<CalendarMonthOutlinedIcon />}
-              sx={{ borderRadius: 3 }}
-              cardContentProps={{ sx: { p: 2 } }}
-            >
-              <Stack spacing={2} component="form" onSubmit={handleCreateAppointment}>
-              <Autocomplete
+        <Drawer
+          anchor="right"
+          open={isAppointmentDrawerOpen}
+          onClose={handleCloseAppointmentDrawer}
+          sx={{
+            "& .MuiBackdrop-root": {
+              backgroundColor: "rgba(2, 6, 23, 0.62)",
+              backdropFilter: "blur(3px)",
+            },
+          }}
+          PaperProps={{
+            sx: {
+              width: { xs: "100%", sm: 760, md: 860 },
+              p: 2,
+              height: "100dvh",
+              backgroundColor: "background.paper",
+              borderLeft: "1px solid",
+              borderColor: "divider",
+              boxShadow: "0 18px 46px rgba(2, 6, 23, 0.28)",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+            },
+          }}
+        >
+          <Box sx={{ flex: 1, overflowY: "auto", pr: 0.5 }}>
+            <Box sx={{ width: "100%" }}>
+              <Card
+                title={isEditingAppointment ? "Editar agendamento" : "Novo agendamento"}
+                icon={<CalendarMonthOutlinedIcon />}
+                sx={{ borderRadius: 3 }}
+                cardHeaderProps={{
+                  action: (
+                    <IconButton
+                      size="small"
+                      aria-label="Fechar"
+                      onClick={handleCloseAppointmentDrawer}
+                    >
+                      <CloseOutlinedIcon fontSize="small" />
+                    </IconButton>
+                  ),
+                }}
+                cardContentProps={{ sx: { p: 2 } }}
+              >
+                <Stack
+                  id="scheduling-appointment-form"
+                  spacing={2}
+                  component="form"
+                  onSubmit={handleCreateAppointment}
+                  sx={{ pb: 2 }}
+                >
+                <Autocomplete
                 options={activeCustomers}
                 value={selectedCustomer}
                 onChange={(_, customer) => handleCustomerSelect(customer)}
@@ -885,19 +1017,25 @@ export const SchedulingPage: React.FC = () => {
                 }
                 isOptionEqualToValue={(option, value) => option.id === value.id}
                 noOptionsText="Nenhum cliente ativo cadastrado"
-                renderOption={(props, customer) => (
-                  <Box component="li" {...props}>
-                    <Stack spacing={0.2}>
-                      <Typography variant="body2" fontWeight={600}>
-                        {customer.name}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {customer.phone || "-"} • {customer.vehicleModel || "-"} •{" "}
-                        {customer.vehiclePlate || "-"}
-                      </Typography>
-                    </Stack>
-                  </Box>
-                )}
+                renderOption={(optionProps, customer) => {
+                  const { key, ...liProps } = optionProps as HTMLAttributes<HTMLLIElement> & {
+                    key: Key;
+                  };
+
+                  return (
+                    <Box component="li" key={key} {...liProps}>
+                      <Stack spacing={0.2}>
+                        <Typography variant="body2" fontWeight={600}>
+                          {customer.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {customer.phone || "-"} • {customer.vehicleModel || "-"} •{" "}
+                          {customer.vehiclePlate || "-"}
+                        </Typography>
+                      </Stack>
+                    </Box>
+                  );
+                }}
                 renderInput={(params) => (
                   <TextField
                     {...params}
@@ -908,7 +1046,7 @@ export const SchedulingPage: React.FC = () => {
                 )}
               />
 
-              <TextField
+                <TextField
                 label="Nome do cliente"
                 value={formState.customerName}
                 onChange={(event) =>
@@ -926,48 +1064,48 @@ export const SchedulingPage: React.FC = () => {
                 required
               />
 
-              <Grid container columns={12} spacing={1.5}>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    label="Telefone"
-                    value={formState.customerPhone}
-                    onChange={(event) =>
-                      setFormState((current) => ({
-                        ...current,
-                        customerId:
-                          selectedCustomer &&
-                          event.target.value.trim() !== selectedCustomer.phone
-                            ? ""
-                            : current.customerId,
-                        customerPhone: event.target.value,
-                      }))
-                    }
-                    size="small"
-                    required
-                    fullWidth
-                  />
+                <Grid container columns={12} spacing={1.5}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      label="Telefone"
+                      value={formState.customerPhone}
+                      onChange={(event) =>
+                        setFormState((current) => ({
+                          ...current,
+                          customerId:
+                            selectedCustomer &&
+                            event.target.value.trim() !== selectedCustomer.phone
+                              ? ""
+                              : current.customerId,
+                          customerPhone: event.target.value,
+                        }))
+                      }
+                      size="small"
+                      required
+                      fullWidth
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      type="email"
+                      label="E-mail"
+                      value={formState.customerEmail}
+                      onChange={(event) =>
+                        setFormState((current) => ({
+                          ...current,
+                          customerId:
+                            selectedCustomer &&
+                            event.target.value.trim() !== selectedCustomer.email
+                              ? ""
+                              : current.customerId,
+                          customerEmail: event.target.value,
+                        }))
+                      }
+                      size="small"
+                      fullWidth
+                    />
+                  </Grid>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    type="email"
-                    label="E-mail"
-                    value={formState.customerEmail}
-                    onChange={(event) =>
-                      setFormState((current) => ({
-                        ...current,
-                        customerId:
-                          selectedCustomer &&
-                          event.target.value.trim() !== selectedCustomer.email
-                            ? ""
-                            : current.customerId,
-                        customerEmail: event.target.value,
-                      }))
-                    }
-                    size="small"
-                    fullWidth
-                  />
-                </Grid>
-              </Grid>
 
               <Grid container columns={12} spacing={1.5}>
                 <Grid size={{ xs: 12, sm: 8 }}>
@@ -1019,23 +1157,29 @@ export const SchedulingPage: React.FC = () => {
                 onChange={(_, item) => handleSelectLaborItem(item)}
                 getOptionLabel={(item) => item.description}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
-                renderOption={(props, item) => (
-                  <Box component="li" {...props}>
-                    <Stack spacing={0.2}>
-                      <Typography variant="body2" fontWeight={600}>
-                        {item.description}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Duração estimada: {item.estimatedDurationMinutes ?? 60} min
-                      </Typography>
-                    </Stack>
-                  </Box>
-                )}
+                renderOption={(optionProps, item) => {
+                  const { key, ...liProps } = optionProps as HTMLAttributes<HTMLLIElement> & {
+                    key: Key;
+                  };
+
+                  return (
+                    <Box component="li" key={key} {...liProps}>
+                      <Stack spacing={0.2}>
+                        <Typography variant="body2" fontWeight={600}>
+                          {item.description}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Duração estimada: {item.estimatedDurationMinutes ?? 60} min
+                        </Typography>
+                      </Stack>
+                    </Box>
+                  );
+                }}
                 renderInput={(params) => (
                   <TextField
                     {...params}
-                    label="Mão de obra"
-                    placeholder="Selecione a mão de obra"
+                    label="Serviço"
+                    placeholder="Selecione o serviço"
                     size="small"
                     fullWidth
                     required
@@ -1043,29 +1187,59 @@ export const SchedulingPage: React.FC = () => {
                 )}
               />
 
-              <Autocomplete
-                freeSolo
-                fullWidth
-                options={mechanicOptions}
-                value={formState.mechanicResponsible}
-                onInputChange={(_, value) =>
-                  setFormState((current) => ({
-                    ...current,
-                    mechanicResponsible: value,
-                  }))
-                }
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Mecânico responsável"
-                    placeholder="Ex.: Carlos Silva"
+              <Stack spacing={0.75} sx={{ mb: 1 }}>
+                <Autocomplete
+                  fullWidth
+                  options={activeMechanics}
+                  value={selectedMechanic}
+                  onChange={(_, mechanic) =>
+                    setFormState((current) => ({
+                      ...current,
+                      mechanicResponsible: mechanic?.name ?? "",
+                    }))
+                  }
+                  getOptionLabel={(mechanic) => mechanic.name}
+                  isOptionEqualToValue={(option, value) => option.id === value.id}
+                  noOptionsText="Cadastre um mecânico para selecionar"
+                  renderOption={(optionProps, mechanic) => {
+                    const { key, ...liProps } = optionProps as HTMLAttributes<HTMLLIElement> & {
+                      key: Key;
+                    };
+
+                    return (
+                      <Box component="li" key={key} {...liProps}>
+                        <Stack spacing={0.2}>
+                          <Typography variant="body2" fontWeight={700}>
+                            {mechanic.name}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {mechanic.phone || "-"} • {mechanic.email || "-"}
+                          </Typography>
+                        </Stack>
+                      </Box>
+                    );
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Mecânico responsável"
+                      placeholder="Selecione um mecânico"
+                      size="small"
+                      fullWidth
+                      required
+                    />
+                  )}
+                />
+                {!activeMechanics.length ? (
+                  <Button
                     size="small"
-                    fullWidth
-                    required
-                  />
-                )}
-                sx={{ mb: 1 }}
-              />
+                    variant="text"
+                    onClick={() => navigate("/ordem-servico/mecanicos")}
+                  >
+                    Cadastrar mecânico responsável
+                  </Button>
+                ) : null}
+              </Stack>
 
               <LocalizationProvider
                 dateAdapter={AdapterDayjs}
@@ -1274,54 +1448,67 @@ export const SchedulingPage: React.FC = () => {
                 minRows={3}
                 size="small"
               />
-
-              <Divider />
-
-                <Stack direction="row" spacing={1.2} flexWrap="wrap">
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    size="large"
-                    startIcon={
-                      isSubmitting ? (
-                        <CircularProgress size={16} color="inherit" />
-                      ) : (
-                        <SaveOutlinedIcon />
-                      )
-                    }
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting
-                      ? "Salvando..."
-                      : isEditingAppointment
-                        ? "Atualizar agendamento"
-                        : "Salvar agendamento"}
-                  </Button>
-                  {isEditingAppointment ? (
-                    <Button
-                      type="button"
-                      variant="outlined"
-                      color="inherit"
-                      startIcon={<CloseOutlinedIcon />}
-                      onClick={resetAppointmentForm}
-                      disabled={isSubmitting}
-                    >
-                      Cancelar edição
-                    </Button>
-                  ) : null}
                 </Stack>
-              </Stack>
-            </Card>
+              </Card>
+            </Box>
           </Box>
-        </Grid>
+          <Box
+            sx={{
+              flexShrink: 0,
+              pt: 1.5,
+              pb: 1.5,
+              backgroundColor: "background.paper",
+              borderTop: "1px solid",
+              borderColor: "divider",
+              px: 0.5,
+            }}
+          >
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              gap={1}
+              alignItems={{ xs: "stretch", sm: "center" }}
+              justifyContent="flex-end"
+            >
+              <Button
+                type="button"
+                variant="outlined"
+                color="inherit"
+                startIcon={<CloseOutlinedIcon />}
+                onClick={handleCloseAppointmentDrawer}
+                disabled={isSubmitting}
+              >
+                {isEditingAppointment ? "Cancelar edição" : "Fechar"}
+              </Button>
+              <Button
+                type="submit"
+                form="scheduling-appointment-form"
+                variant="contained"
+                size="large"
+                startIcon={
+                  isSubmitting ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : (
+                    <SaveOutlinedIcon />
+                  )
+                }
+                disabled={isSubmitting}
+              >
+                {isSubmitting
+                  ? "Salvando..."
+                  : isEditingAppointment
+                    ? "Atualizar agendamento"
+                    : "Salvar agendamento"}
+              </Button>
+            </Stack>
+          </Box>
+        </Drawer>
 
         <Grid size={{ xs: 12, md: 12 }}>
           <Box sx={{ mb: 1.5 }}>
             <Autocomplete
-              freeSolo
               options={mechanicOptions}
-              value={mechanicFilter}
-              onInputChange={(_, value) => setMechanicFilter(value)}
+              value={mechanicOptions.includes(mechanicFilter) ? mechanicFilter : null}
+              onChange={(_, value) => setMechanicFilter(value ?? "")}
               renderInput={(params) => (
                 <TextField
                   {...params}

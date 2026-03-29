@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNotification } from "@refinedev/core";
 import Grid from "@mui/material/Grid2";
+import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import Divider from "@mui/material/Divider";
+import Drawer from "@mui/material/Drawer";
+import IconButton from "@mui/material/IconButton";
 import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
 import Table from "@mui/material/Table";
@@ -95,6 +98,7 @@ export const ServiceOrderChecklistsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<
     "all" | ServiceOrderChecklistStatus
   >("all");
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [formState, setFormState] = useState<ChecklistFormState>(DEFAULT_FORM_STATE);
   const [isSaving, setIsSaving] = useState(false);
@@ -179,6 +183,16 @@ export const ServiceOrderChecklistsPage: React.FC = () => {
     setFormState(DEFAULT_FORM_STATE);
   };
 
+  const openNew = () => {
+    resetForm();
+    setIsDrawerOpen(true);
+  };
+
+  const closeDrawer = () => {
+    setIsDrawerOpen(false);
+    resetForm();
+  };
+
   const setField = <K extends keyof ChecklistFormState>(
     field: K,
     value: ChecklistFormState[K],
@@ -225,6 +239,7 @@ export const ServiceOrderChecklistsPage: React.FC = () => {
 
       resetForm();
       loadItems();
+      setIsDrawerOpen(false);
     } catch (error) {
       open?.({
         type: "error",
@@ -242,13 +257,14 @@ export const ServiceOrderChecklistsPage: React.FC = () => {
       label: item.label,
       status: item.status,
     });
+    setIsDrawerOpen(true);
   };
 
   const handleDelete = (item: ServiceOrderChecklistItem) => {
     try {
       removeServiceOrderChecklist(item.id);
       if (editingItemId === item.id) {
-        resetForm();
+        closeDrawer();
       }
 
       open?.({
@@ -272,6 +288,14 @@ export const ServiceOrderChecklistsPage: React.FC = () => {
         <Stack direction="row" spacing={1} flexWrap="wrap">
           <Button
             size="small"
+            variant="contained"
+            startIcon={<AddBoxOutlinedIcon />}
+            onClick={openNew}
+          >
+            Novo item
+          </Button>
+          <Button
+            size="small"
             variant="outlined"
             startIcon={<NoteAddOutlinedIcon />}
             onClick={() => navigate("/ordem-servico")}
@@ -282,66 +306,117 @@ export const ServiceOrderChecklistsPage: React.FC = () => {
       )}
     >
       <Grid container columns={24} spacing={3}>
-        <Grid size={{ xs: 24, lg: 8 }}>
-          <Card
-            title={isEditing ? "Editar item do checklist" : "Novo item do checklist"}
-            icon={<AddBoxOutlinedIcon />}
-            cardContentProps={{ sx: { p: 3 } }}
-          >
-            <Stack spacing={2}>
-              <Typography variant="body2" color="text.secondary">
-                Cadastre os itens que devem aparecer no checklist de inspeção da
-                ordem de serviço.
-              </Typography>
-              <TextField
-                fullWidth
-                size="small"
-                label="Descrição"
-                placeholder="Ex.: Estado da bateria"
-                value={formState.label}
-                onChange={(event) => setField("label", event.target.value)}
-              />
-              <TextField
-                select
-                fullWidth
-                size="small"
-                label="Status"
-                value={formState.status}
-                onChange={(event) =>
-                  setField(
-                    "status",
-                    event.target.value as ServiceOrderChecklistStatus,
-                  )
-                }
-              >
-                <MenuItem value="active">Ativo</MenuItem>
-                <MenuItem value="inactive">Inativo</MenuItem>
-              </TextField>
-
-              <Stack direction="row" spacing={1}>
-                <Button
-                  variant="contained"
-                  startIcon={<SaveOutlinedIcon />}
-                  onClick={() => {
-                    void handleSave();
-                  }}
-                  disabled={isSaving}
+        <Drawer
+          anchor="right"
+          open={isDrawerOpen}
+          onClose={closeDrawer}
+          sx={{
+            "& .MuiBackdrop-root": {
+              backgroundColor: "rgba(2, 6, 23, 0.62)",
+              backdropFilter: "blur(3px)",
+            },
+          }}
+          PaperProps={{
+            sx: {
+              width: { xs: "100%", sm: 720, md: 820 },
+              p: 2,
+              height: "100dvh",
+              backgroundColor: "background.paper",
+              borderLeft: "1px solid",
+              borderColor: "divider",
+              boxShadow: "0 18px 46px rgba(2, 6, 23, 0.28)",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+            },
+          }}
+        >
+          <Box sx={{ flex: 1, overflowY: "auto", pr: 0.5 }}>
+            <Card
+              title={isEditing ? "Editar item do checklist" : "Novo item do checklist"}
+              icon={<AddBoxOutlinedIcon />}
+              sx={{ borderRadius: 3 }}
+              cardHeaderProps={{
+                action: (
+                  <IconButton size="small" aria-label="Fechar" onClick={closeDrawer}>
+                    <CloseOutlinedIcon fontSize="small" />
+                  </IconButton>
+                ),
+              }}
+              cardContentProps={{ sx: { p: 3 } }}
+            >
+              <Stack spacing={2}>
+                <Typography variant="body2" color="text.secondary">
+                  Cadastre os itens que devem aparecer no checklist de inspeção da
+                  ordem de serviço.
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Descrição"
+                  placeholder="Ex.: Estado da bateria"
+                  value={formState.label}
+                  onChange={(event) => setField("label", event.target.value)}
+                />
+                <TextField
+                  select
+                  fullWidth
+                  size="small"
+                  label="Status"
+                  value={formState.status}
+                  onChange={(event) =>
+                    setField(
+                      "status",
+                      event.target.value as ServiceOrderChecklistStatus,
+                    )
+                  }
                 >
-                  {isEditing ? "Salvar Alterações" : "Cadastrar"}
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<CloseOutlinedIcon />}
-                  onClick={resetForm}
-                >
-                  Limpar
-                </Button>
+                  <MenuItem value="active">Ativo</MenuItem>
+                  <MenuItem value="inactive">Inativo</MenuItem>
+                </TextField>
               </Stack>
-            </Stack>
-          </Card>
-        </Grid>
+            </Card>
+          </Box>
 
-        <Grid size={{ xs: 24, lg: 16 }}>
+          <Box
+            sx={{
+              flexShrink: 0,
+              pt: 1.5,
+              pb: 1.5,
+              backgroundColor: "background.paper",
+              borderTop: "1px solid",
+              borderColor: "divider",
+              px: 0.5,
+            }}
+          >
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              gap={1}
+              alignItems={{ xs: "stretch", sm: "center" }}
+              justifyContent="flex-end"
+            >
+              <Button
+                variant="outlined"
+                startIcon={<CloseOutlinedIcon />}
+                onClick={closeDrawer}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<SaveOutlinedIcon />}
+                onClick={() => {
+                  void handleSave();
+                }}
+                disabled={isSaving}
+              >
+                {isEditing ? "Salvar alterações" : "Cadastrar"}
+              </Button>
+            </Stack>
+          </Box>
+        </Drawer>
+
+        <Grid size={{ xs: 24 }}>
           <Card
             title="Itens cadastrados"
             icon={<ChecklistOutlinedIcon />}

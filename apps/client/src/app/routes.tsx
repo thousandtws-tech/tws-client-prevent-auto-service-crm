@@ -48,6 +48,11 @@ const ServiceOrderChecklistsPage = lazy(() =>
     default: module.ServiceOrderChecklistsPage,
   })),
 );
+const ServiceOrderMechanicsPage = lazy(() =>
+  import("../pages/service-order-mechanics/index").then((module) => ({
+    default: module.ServiceOrderMechanicsPage,
+  })),
+);
 const ServiceOrderPartsPage = lazy(() =>
   import("../pages/service-order-parts").then((module) => ({
     default: module.ServiceOrderPartsPage,
@@ -149,6 +154,10 @@ export const AppRoutes: React.FC = () => {
           <Route
             path="ordem-servico/checklists"
             element={<ServiceOrderChecklistsPage />}
+          />
+          <Route
+            path="ordem-servico/mecanicos"
+            element={<ServiceOrderMechanicsPage />}
           />
           <Route
             path="ordem-servico/historico"

@@ -42,6 +42,11 @@ src
 | GET | `/customers` | `200 OK` | Lista clientes da oficina autenticada com paginacao, ordenacao e filtros |
 | PUT | `/customers/{id}` | `200 OK` | Atualiza um cliente da oficina autenticada |
 | DELETE | `/customers/{id}` | `204 No Content` | Remove um cliente da oficina autenticada |
+| POST | `/mechanics` | `201 Created` | Cadastra um mecanico responsavel para a oficina autenticada |
+| GET | `/mechanics/{id}` | `200 OK` | Busca mecanico por id dentro da oficina autenticada |
+| GET | `/mechanics` | `200 OK` | Lista mecanicos da oficina autenticada com paginacao, ordenacao e filtros |
+| PATCH | `/mechanics/{id}` | `200 OK` | Atualiza um mecanico existente |
+| DELETE | `/mechanics/{id}` | `204 No Content` | Remove um mecanico da oficina autenticada |
 
 Filtros suportados em `GET /customers`:
 
@@ -63,6 +68,52 @@ Campos aceitos em `sort`:
 - `updatedAt`
 
 ## Exemplos
+
+### POST /mechanics
+
+Request:
+
+```json
+{
+  "name": "Carlos Silva",
+  "phone": "(11) 99999-9999",
+  "email": "carlos@prevent.com.br",
+  "status": "active"
+}
+```
+
+Response (`201 Created`):
+
+```json
+{
+  "id": 1,
+  "status": "active",
+  "name": "Carlos Silva",
+  "phone": "(11) 99999-9999",
+  "email": "carlos@prevent.com.br",
+  "createdAt": "2026-03-28T13:00:00Z",
+  "updatedAt": "2026-03-28T13:00:00Z"
+}
+```
+
+### GET /mechanics
+
+Filtros suportados:
+
+- `page`
+- `size`
+- `sort=campo,direcao`
+- `name`
+- `phone`
+- `status` (`active` | `inactive`)
+
+Campos aceitos em `sort`:
+
+- `id`
+- `name`
+- `status`
+- `createdAt`
+- `updatedAt`
 
 ### POST /customers
 

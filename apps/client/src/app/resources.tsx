@@ -14,6 +14,7 @@ import RuleOutlinedIcon from "@mui/icons-material/RuleOutlined";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import HandymanOutlinedIcon from "@mui/icons-material/HandymanOutlined";
 import ChecklistOutlinedIcon from "@mui/icons-material/ChecklistOutlined";
+import BadgeOutlinedIcon from "@mui/icons-material/BadgeOutlined";
 
 type Translate = (key: string, defaultValue: string) => string;
 
@@ -35,6 +36,7 @@ const SERVICE_ORDER_REFUSALS_ICON = <RuleOutlinedIcon />;
 const SERVICE_ORDER_PARTS_ICON = <Inventory2OutlinedIcon />;
 const SERVICE_ORDER_LABOR_ICON = <HandymanOutlinedIcon />;
 const SERVICE_ORDER_CHECKLISTS_ICON = <ChecklistOutlinedIcon />;
+const SERVICE_ORDER_MECHANICS_ICON = <BadgeOutlinedIcon />;
 
 type ResourceLeafConfig = {
   name: string;
@@ -125,7 +127,7 @@ export const useAppResources = (t: Translate) =>
       createLeafResource({
         name: "service-order-labor",
         list: "/ordem-servico/mao-de-obra",
-        label: "Cadastro de Mão de Obra",
+        label: "Cadastro de Serviços",
         parent: SERVICE_ORDER_PARENT,
         icon: SERVICE_ORDER_LABOR_ICON,
       }),
@@ -135,6 +137,13 @@ export const useAppResources = (t: Translate) =>
         label: "Checklist Personalizado",
         parent: SERVICE_ORDER_PARENT,
         icon: SERVICE_ORDER_CHECKLISTS_ICON,
+      }),
+      createLeafResource({
+        name: "service-order-mechanics",
+        list: "/ordem-servico/mecanicos",
+        label: "Cadastro de Mecânicos",
+        parent: SERVICE_ORDER_PARENT,
+        icon: SERVICE_ORDER_MECHANICS_ICON,
       }),
       createLeafResource({
         name: "service-order-history",

@@ -5,6 +5,8 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import Divider from "@mui/material/Divider";
+import Drawer from "@mui/material/Drawer";
+import IconButton from "@mui/material/IconButton";
 import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
 import Table from "@mui/material/Table";
@@ -74,13 +76,13 @@ const MODULE_COPY: Record<
     helperText: "As peças cadastradas podem ser adicionadas diretamente na ordem de serviço.",
   },
   labor: {
-    title: "Cadastro de Mão de Obra",
-    singular: "mão de obra",
-    plural: "mãos de obra",
-    addLabel: "Nova mão de obra",
-    emptyText: "Nenhuma mão de obra cadastrada.",
+    title: "Cadastro de Serviços",
+    singular: "serviço",
+    plural: "serviços",
+    addLabel: "Novo serviço",
+    emptyText: "Nenhum serviço cadastrado.",
     helperText:
-      "Os serviços cadastrados ficam disponíveis para compor a mão de obra na ordem de serviço.",
+      "Os serviços cadastrados ficam disponíveis para compor os serviços na ordem de serviço.",
   },
 };
 
@@ -145,6 +147,7 @@ export const ServiceOrderCatalogPage: React.FC<{
   const [formState, setFormState] = useState<CatalogFormState>(DEFAULT_FORM_STATE);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const isEditing = Boolean(editingItemId);
 
@@ -237,6 +240,16 @@ export const ServiceOrderCatalogPage: React.FC<{
     setFormState(DEFAULT_FORM_STATE);
   };
 
+  const closeDrawer = () => {
+    setIsDrawerOpen(false);
+    resetForm();
+  };
+
+  const openNew = () => {
+    resetForm();
+    setIsDrawerOpen(true);
+  };
+
   const setField = <K extends keyof CatalogFormState>(
     field: K,
     value: CatalogFormState[K],
@@ -299,7 +312,7 @@ export const ServiceOrderCatalogPage: React.FC<{
         });
       }
 
-      resetForm();
+      closeDrawer();
       await loadItems();
     } catch (error) {
       open?.({
@@ -322,13 +335,14 @@ export const ServiceOrderCatalogPage: React.FC<{
       partCondition: item.partCondition ?? "new",
       status: item.status,
     });
+    setIsDrawerOpen(true);
   };
 
   const handleDelete = async (id: string) => {
     try {
       await removeServiceOrderCatalogItemApi(id);
       if (editingItemId === id) {
-        resetForm();
+        closeDrawer();
       }
 
       open?.({
@@ -352,6 +366,14 @@ export const ServiceOrderCatalogPage: React.FC<{
         <Stack direction="row" spacing={1} flexWrap="wrap">
           <Button
             size="small"
+            variant="contained"
+            startIcon={<AddBoxOutlinedIcon />}
+            onClick={openNew}
+          >
+            {copy.addLabel}
+          </Button>
+          <Button
+            size="small"
             variant="outlined"
             startIcon={<NoteAddOutlinedIcon />}
             onClick={() => navigate("/ordem-servico")}
@@ -362,107 +384,166 @@ export const ServiceOrderCatalogPage: React.FC<{
       )}
     >
       <Grid container columns={24} spacing={3}>
-        <Grid size={{ xs: 24, lg: 8 }}>
-          <Card
-            title={isEditing ? `Editar ${copy.singular}` : copy.addLabel}
-            icon={<AddBoxOutlinedIcon />}
-            cardContentProps={{ sx: { p: 3 } }}
-          >
-            <Stack spacing={2}>
-              <Typography variant="body2" color="text.secondary">
-                {copy.helperText}
-              </Typography>
-              <TextField
-                fullWidth
-                size="small"
-                label="Código"
-                placeholder="Opcional"
-                value={formState.code}
-                onChange={(event) => setField("code", event.target.value)}
-              />
-              <TextField
-                fullWidth
-                size="small"
-                label="Descrição"
-                value={formState.description}
-                onChange={(event) => setField("description", event.target.value)}
-              />
-              <TextField
-                fullWidth
-                size="small"
-                type="number"
-                label="Valor padrão"
-                value={formState.defaultPrice}
-                onChange={(event) => setField("defaultPrice", event.target.value)}
-              />
-              {type === "labor" ? (
+        <Drawer
+          anchor="right"
+          open={isDrawerOpen}
+          onClose={closeDrawer}
+          sx={{
+            "& .MuiBackdrop-root": {
+              backgroundColor: "rgba(2, 6, 23, 0.62)",
+              backdropFilter: "blur(3px)",
+            },
+          }}
+          PaperProps={{
+            sx: {
+              width: { xs: "100%", sm: 760, md: 860 },
+              p: 2,
+              height: "100dvh",
+              backgroundColor: "background.paper",
+              borderLeft: "1px solid",
+              borderColor: "divider",
+              boxShadow: "0 18px 46px rgba(2, 6, 23, 0.28)",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+            },
+          }}
+        >
+          <Box sx={{ flex: 1, overflowY: "auto", pr: 0.5 }}>
+            <Card
+              title={isEditing ? `Editar ${copy.singular}` : copy.addLabel}
+              icon={<AddBoxOutlinedIcon />}
+              sx={{ borderRadius: 3 }}
+              cardHeaderProps={{
+                action: (
+                  <IconButton
+                    size="small"
+                    aria-label="Fechar"
+                    onClick={closeDrawer}
+                  >
+                    <CloseOutlinedIcon fontSize="small" />
+                  </IconButton>
+                ),
+              }}
+              cardContentProps={{ sx: { p: 3 } }}
+            >
+              <Stack id="service-order-catalog-form" spacing={2}>
+                <Typography variant="body2" color="text.secondary">
+                  {copy.helperText}
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Código"
+                  placeholder="Opcional"
+                  value={formState.code}
+                  onChange={(event) => setField("code", event.target.value)}
+                />
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Descrição"
+                  value={formState.description}
+                  onChange={(event) => setField("description", event.target.value)}
+                  required
+                />
                 <TextField
                   fullWidth
                   size="small"
                   type="number"
-                  label="Duração estimada (min)"
-                  value={formState.estimatedDurationMinutes}
-                  onChange={(event) =>
-                    setField("estimatedDurationMinutes", event.target.value)
-                  }
+                  label="Valor padrão"
+                  value={formState.defaultPrice}
+                  onChange={(event) => setField("defaultPrice", event.target.value)}
                 />
-              ) : null}
-              {type === "part" ? (
+                {type === "labor" ? (
+                  <TextField
+                    fullWidth
+                    size="small"
+                    type="number"
+                    label="Duração estimada (min)"
+                    value={formState.estimatedDurationMinutes}
+                    onChange={(event) =>
+                      setField("estimatedDurationMinutes", event.target.value)
+                    }
+                  />
+                ) : null}
+                {type === "part" ? (
+                  <TextField
+                    select
+                    fullWidth
+                    size="small"
+                    label="Tipo da peça"
+                    value={formState.partCondition}
+                    onChange={(event) =>
+                      setField(
+                        "partCondition",
+                        event.target.value as ServiceOrderPartCondition,
+                      )
+                    }
+                  >
+                    <MenuItem value="new">Nova</MenuItem>
+                    <MenuItem value="used">Usada</MenuItem>
+                  </TextField>
+                ) : null}
                 <TextField
                   select
                   fullWidth
                   size="small"
-                  label="Tipo da peça"
-                  value={formState.partCondition}
+                  label="Status"
+                  value={formState.status}
                   onChange={(event) =>
-                    setField(
-                      "partCondition",
-                      event.target.value as ServiceOrderPartCondition,
-                    )
+                    setField("status", event.target.value as ServiceOrderCatalogStatus)
                   }
                 >
-                  <MenuItem value="new">Nova</MenuItem>
-                  <MenuItem value="used">Usada</MenuItem>
+                  <MenuItem value="active">Ativo</MenuItem>
+                  <MenuItem value="inactive">Inativo</MenuItem>
                 </TextField>
-              ) : null}
-              <TextField
-                select
-                fullWidth
-                size="small"
-                label="Status"
-                value={formState.status}
-                onChange={(event) =>
-                  setField("status", event.target.value as ServiceOrderCatalogStatus)
-                }
-              >
-                <MenuItem value="active">Ativo</MenuItem>
-                <MenuItem value="inactive">Inativo</MenuItem>
-              </TextField>
-
-              <Stack direction="row" spacing={1}>
-                <Button
-                  variant="contained"
-                  startIcon={<SaveOutlinedIcon />}
-                  onClick={() => {
-                    void handleSave();
-                  }}
-                  disabled={isSaving}
-                >
-                  {isEditing ? "Salvar Alterações" : "Cadastrar"}
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<CloseOutlinedIcon />}
-                  onClick={resetForm}
-                >
-                  Limpar
-                </Button>
               </Stack>
-            </Stack>
-          </Card>
-        </Grid>
+            </Card>
+          </Box>
 
-        <Grid size={{ xs: 24, lg: 16 }}>
+          <Box
+            sx={{
+              flexShrink: 0,
+              pt: 1.5,
+              pb: 1.5,
+              backgroundColor: "background.paper",
+              borderTop: "1px solid",
+              borderColor: "divider",
+              px: 0.5,
+            }}
+          >
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              gap={1}
+              alignItems={{ xs: "stretch", sm: "center" }}
+              justifyContent="flex-end"
+            >
+              <Button
+                type="button"
+                variant="outlined"
+                color="inherit"
+                startIcon={<CloseOutlinedIcon />}
+                onClick={closeDrawer}
+                disabled={isSaving}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<SaveOutlinedIcon />}
+                onClick={() => {
+                  void handleSave();
+                }}
+                disabled={isSaving}
+              >
+                {isEditing ? "Salvar alterações" : "Cadastrar"}
+              </Button>
+            </Stack>
+          </Box>
+        </Drawer>
+
+        <Grid size={{ xs: 24, lg: 24 }}>
           <Card
             title={`Lista de ${copy.plural}`}
             icon={<NoteAddOutlinedIcon />}

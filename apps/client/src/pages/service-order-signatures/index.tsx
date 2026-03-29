@@ -422,7 +422,14 @@ export const ServiceOrderSignaturesPage: React.FC = () => {
                           </Stack>
                         </TableCell>
                         <TableCell align="right">
-                          <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                          <Stack
+                            direction="row"
+                            spacing={0.75}
+                            alignItems="center"
+                            justifyContent="flex-end"
+                            flexWrap="wrap"
+                            useFlexGap
+                          >
                             <Button
                               size="small"
                               variant="text"
@@ -432,6 +439,8 @@ export const ServiceOrderSignaturesPage: React.FC = () => {
                               sx={{
                                 textTransform: "none",
                                 whiteSpace: "nowrap",
+                                minHeight: 32,
+                                alignItems: "center",
                               }}
                             >
                               Ver detalhes
@@ -454,6 +463,8 @@ export const ServiceOrderSignaturesPage: React.FC = () => {
                               sx={{
                                 textTransform: "none",
                                 whiteSpace: "nowrap",
+                                minHeight: 32,
+                                alignItems: "center",
                               }}
                             >
                               {deletingToken === row.order.token ? "Excluindo..." : "Excluir"}
@@ -594,7 +605,7 @@ export const ServiceOrderSignaturesPage: React.FC = () => {
                   Peças: {formatCurrency(selectedRow.order.totals.partsSubtotal)}
                 </Typography>
                 <Typography variant="body2">
-                  Mão de obra: {formatCurrency(selectedRow.order.totals.laborSubtotal)}
+                  Serviços: {formatCurrency(selectedRow.order.totals.laborSubtotal)}
                 </Typography>
                 <Typography variant="body2">
                   Terceiros: {formatCurrency(selectedRow.order.totals.thirdPartySubtotal)}
@@ -625,7 +636,7 @@ export const ServiceOrderSignaturesPage: React.FC = () => {
               </Stack>
 
               <Stack spacing={1}>
-                <Typography fontWeight={700}>Mão de Obra</Typography>
+                <Typography fontWeight={700}>Serviços</Typography>
                 {selectedRow.order.laborServices.length ? (
                   selectedRow.order.laborServices.map((service) => (
                     <Typography key={service.id} variant="body2">

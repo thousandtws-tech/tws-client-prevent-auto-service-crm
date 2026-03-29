@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import Box from "@mui/material/Box";
 import BusinessCenterOutlinedIcon from "@mui/icons-material/BusinessCenterOutlined";
+import { useTheme } from "@mui/material/styles";
 import {
   APP_SETTINGS_UPDATED_EVENT,
   type AppSettings,
@@ -13,6 +14,7 @@ type TitleProps = {
 };
 
 const DEFAULT_SIDEBAR_LOGO_URL = "/logo-branco.svg";
+const DEFAULT_SIDEBAR_LOGO_URL_LIGHT = "/logo-preto.svg";
 
 const resolveSidebarLogoUrl = (value?: string) => {
   const normalized = value?.trim() ?? "";
@@ -20,9 +22,15 @@ const resolveSidebarLogoUrl = (value?: string) => {
 };
 
 export const Title: React.FC<TitleProps> = ({ collapsed }) => {
+  const theme = useTheme();
   const [sidebarLogoUrl, setSidebarLogoUrl] = useState(
     () => resolveSidebarLogoUrl(readAppSettings().branding.sidebarLogoUrl),
   );
+
+  const resolvedLogoUrl =
+    theme.palette.mode === "light" && sidebarLogoUrl === DEFAULT_SIDEBAR_LOGO_URL
+      ? DEFAULT_SIDEBAR_LOGO_URL_LIGHT
+      : sidebarLogoUrl;
 
   useEffect(() => {
     const handleSettingsUpdate: EventListener = (event) => {
@@ -46,10 +54,10 @@ export const Title: React.FC<TitleProps> = ({ collapsed }) => {
     };
   }, []);
 
-  const logoNode = sidebarLogoUrl ? (
+  const logoNode = resolvedLogoUrl ? (
     <Box
       component="img"
-      src={sidebarLogoUrl}
+      src={resolvedLogoUrl}
       alt="Logo Prevent Auto Mecanica"
       sx={{
         width: collapsed ? 32 : 220,

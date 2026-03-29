@@ -100,7 +100,7 @@ const STATUS_META: Record<
 
 const REFUSAL_TYPE_LABEL: Record<RefusalType, string> = {
   part: "Peça",
-  labor: "Mão de Obra",
+  labor: "Serviço",
   thirdParty: "Terceiro",
 };
 
@@ -373,7 +373,7 @@ export const ServiceOrderRefusalsPage: React.FC = () => {
             >
               <MenuItem value="all">Todos</MenuItem>
               <MenuItem value="part">Peça</MenuItem>
-              <MenuItem value="labor">Mão de Obra</MenuItem>
+              <MenuItem value="labor">Serviço</MenuItem>
               <MenuItem value="thirdParty">Terceiro</MenuItem>
             </TextField>
           </Stack>

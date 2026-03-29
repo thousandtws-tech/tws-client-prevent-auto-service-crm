@@ -3,6 +3,7 @@ import {
   clearStoredAuthSession,
   normalizeAuthResponse,
   readStoredAuthSession,
+  isStoredAuthSessionExpired,
 } from "./authStorage";
 
 const TRUE_VALUES = new Set(["1", "true", "yes", "on"]);
@@ -107,37 +108,110 @@ const getStoredAccessToken = () => {
   return import.meta.env.VITE_BACKEND_AUTH_TOKEN?.trim() ?? "";
 };
 
+const normalizeAuthorizationValue = (tokenType: string, token: string) => {
+  const trimmedToken = token.trim();
+  if (!trimmedToken) {
+    return "";
+  }
+
+  if (/^[A-Za-z][A-Za-z0-9+.-]*\s+\S+/.test(trimmedToken)) {
+    return trimmedToken;
+  }
+
+  const trimmedType = tokenType.trim() || "Bearer";
+  return `${trimmedType} ${trimmedToken}`;
+};
+
+const getAuthorizationHeaderValue = () => {
+  const session = readStoredAuthSession();
+  if (session?.accessToken) {
+    return normalizeAuthorizationValue(session.tokenType || "Bearer", session.accessToken);
+  }
+
+  const envToken = import.meta.env.VITE_BACKEND_AUTH_TOKEN?.trim() ?? "";
+  if (!envToken) {
+    return "";
+  }
+
+  return normalizeAuthorizationValue("Bearer", envToken);
+};
+
+let refreshInFlight: Promise<string | null> | null = null;
+let lastRefreshFailureAt = 0;
+const REFRESH_FAILURE_BACKOFF_MS = 10_000;
+
 const refreshStoredAuthSession = async (): Promise<string | null> => {
   const current = readStoredAuthSession();
   if (!current?.refreshToken || !isBackendApiEnabled()) {
     return null;
   }
 
-  const response = await fetch(joinUrl(getBackendBaseUrl(), "/auth/refresh"), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      refreshToken: current.refreshToken,
-    }),
-  });
+  try {
+    const response = await fetch(joinUrl(getBackendBaseUrl(), "/auth/refresh"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        refreshToken: current.refreshToken,
+      }),
+    });
 
-  const parsedBody = await parseResponseBody(response);
+    const parsedBody = await parseResponseBody(response);
 
-  if (!response.ok) {
+    if (!response.ok) {
+      clearStoredAuthSession();
+      lastRefreshFailureAt = Date.now();
+      return null;
+    }
+
+    const authResponse = normalizeAuthResponse(parsedBody);
+    if (!authResponse) {
+      clearStoredAuthSession();
+      lastRefreshFailureAt = Date.now();
+      return null;
+    }
+
+    const next = applyAuthResponse(authResponse);
+    return next.accessToken;
+  } catch {
     clearStoredAuthSession();
-    throw buildError(response, parsedBody);
+    lastRefreshFailureAt = Date.now();
+    return null;
+  }
+};
+
+const refreshStoredAuthSessionShared = async () => {
+  const now = Date.now();
+  if (now - lastRefreshFailureAt < REFRESH_FAILURE_BACKOFF_MS) {
+    return null;
   }
 
-  const authResponse = normalizeAuthResponse(parsedBody);
-  if (!authResponse) {
-    clearStoredAuthSession();
-    throw new Error("Resposta inválida ao renovar a sessão.");
+  if (!refreshInFlight) {
+    refreshInFlight = refreshStoredAuthSession().finally(() => {
+      refreshInFlight = null;
+    });
   }
 
-  const next = applyAuthResponse(authResponse);
-  return next.accessToken;
+  return refreshInFlight;
+};
+
+const ensureFreshAccessToken = async () => {
+  const current = readStoredAuthSession();
+
+  if (!current?.accessToken) {
+    return;
+  }
+
+  if (!current.refreshToken) {
+    return;
+  }
+
+  if (!isStoredAuthSessionExpired(current)) {
+    return;
+  }
+
+  await refreshStoredAuthSessionShared();
 };
 
 type RequestJsonOptions = Omit<RequestInit, "body" | "method" | "headers"> & {
@@ -161,13 +235,17 @@ const performRequest = async (
     ...rest
   } = options;
 
-  const token = skipAuth ? "" : getStoredAccessToken();
+  if (!skipAuth) {
+    await ensureFreshAccessToken();
+  }
+
+  const authorizationValue = skipAuth ? "" : getAuthorizationHeaderValue();
 
   const response = await fetch(joinUrl(getBackendBaseUrl(), path), {
     method,
     headers: {
       "Content-Type": "application/json",
-      ...(skipAuth || !token ? {} : { Authorization: `Bearer ${token}` }),
+      ...(skipAuth || !authorizationValue ? {} : { Authorization: authorizationValue }),
       ...(headers ?? {}),
     },
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -180,14 +258,14 @@ const performRequest = async (
     !skipAuth &&
     readStoredAuthSession()?.refreshToken
   ) {
-    const nextToken = await refreshStoredAuthSession();
+    const nextToken = await refreshStoredAuthSessionShared();
 
     if (nextToken) {
       return fetch(joinUrl(getBackendBaseUrl(), path), {
         method,
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${nextToken}`,
+          Authorization: normalizeAuthorizationValue("Bearer", nextToken),
           ...(headers ?? {}),
         },
         body: body === undefined ? undefined : JSON.stringify(body),
@@ -211,6 +289,9 @@ export const requestJson = async <T>(
   const parsedBody = await parseResponseBody(response);
 
   if (!response.ok) {
+    if (response.status === 401 && !options.skipAuth) {
+      clearStoredAuthSession();
+    }
     throw buildError(response, parsedBody);
   }
 
@@ -246,12 +327,16 @@ export const uploadMultipart = async <T>(
   formData.append(fieldName, file);
 
   const attempt = async (tokenOverride?: string) => {
-    const token = tokenOverride ?? getStoredAccessToken();
+    if (!tokenOverride) {
+      await ensureFreshAccessToken();
+    }
+
+    const token = tokenOverride ?? getAuthorizationHeaderValue();
 
     return fetch(joinUrl(getBackendBaseUrl(), path), {
       method,
       headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(token ? { Authorization: token } : {}),
         ...(headers ?? {}),
       },
       body: formData,
@@ -262,9 +347,9 @@ export const uploadMultipart = async <T>(
   let response = await attempt();
 
   if (response.status === 401 && retryOnUnauthorized && readStoredAuthSession()?.refreshToken) {
-    const nextToken = await refreshStoredAuthSession();
+    const nextToken = await refreshStoredAuthSessionShared();
     if (nextToken) {
-      response = await attempt(nextToken);
+      response = await attempt(normalizeAuthorizationValue("Bearer", nextToken));
     }
   }
 
