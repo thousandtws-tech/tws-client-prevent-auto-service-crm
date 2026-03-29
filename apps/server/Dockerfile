@@ -12,6 +12,7 @@ RUN chmod +x mvnw
 RUN ./mvnw -B -ntp -pl ${MODULE} -am dependency:go-offline
 
 COPY ms-auth/src ms-auth/src
+COPY ms-backup/src ms-backup/src
 COPY ms-customers/src ms-customers/src
 COPY ms-service-orders/src ms-service-orders/src
 COPY ms-scheduling/src ms-scheduling/src
@@ -31,4 +32,3 @@ RUN apt-get update && \
 COPY --from=build /workspace/app.jar /app/app.jar
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
-
