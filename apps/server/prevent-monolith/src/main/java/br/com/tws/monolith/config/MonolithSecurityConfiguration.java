@@ -84,8 +84,16 @@ public class MonolithSecurityConfiguration {
                                 "/v3/api-docs/**",
                                 "/webjars/**"
                         ).permitAll()
-                        .pathMatchers(HttpMethod.POST, "/auth/signup", "/auth/login", "/auth/refresh", "/auth/logout")
+                        .pathMatchers(
+                                HttpMethod.POST,
+                                "/auth/signup",
+                                "/auth/login",
+                                "/auth/refresh",
+                                "/auth/logout",
+                                "/auth/verify-email-code"
+                        )
                         .permitAll()
+                        .pathMatchers(HttpMethod.GET, "/auth/verify-email").permitAll()
                         .pathMatchers(HttpMethod.GET, "/service-orders/shared/**").permitAll()
                         .pathMatchers(HttpMethod.POST, "/service-orders/shared/**").permitAll()
                         .anyExchange().authenticated())

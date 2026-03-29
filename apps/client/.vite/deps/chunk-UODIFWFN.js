@@ -1,12 +1,12 @@
 import {
+  DialogContext_default
+} from "./chunk-VNVDSWFN.js";
+import {
   getDialogTitleUtilityClass
 } from "./chunk-2B4QK6TN.js";
 import {
   Typography_default
 } from "./chunk-I5FIRMAS.js";
-import {
-  DialogContext_default
-} from "./chunk-VNVDSWFN.js";
 import {
   useDefaultProps
 } from "./chunk-AEFPJTIZ.js";
@@ -105,4 +105,4 @@ var DialogTitle_default = DialogTitle;
 export {
   DialogTitle_default
 };
-//# sourceMappingURL=chunk-WB6VQK3N.js.map
+//# sourceMappingURL=chunk-UODIFWFN.js.map

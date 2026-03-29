@@ -1,9 +1,9 @@
 import {
-  ButtonBase_default
-} from "./chunk-FPNK2DDD.js";
-import {
   createSimplePaletteValueFilter
 } from "./chunk-TAPUFPH2.js";
+import {
+  ButtonBase_default
+} from "./chunk-FPNK2DDD.js";
 import {
   unsupportedProp_default
 } from "./chunk-6Q4Q6S4O.js";
@@ -11,14 +11,14 @@ import {
   createSvgIcon
 } from "./chunk-BDOX56QU.js";
 import {
-  useForkRef_default
-} from "./chunk-73NAO42N.js";
-import {
   capitalize_default
 } from "./chunk-N7IMXGIU.js";
 import {
   memoTheme_default
 } from "./chunk-EZYBKUPR.js";
+import {
+  useForkRef_default
+} from "./chunk-73NAO42N.js";
 import {
   useDefaultProps
 } from "./chunk-AEFPJTIZ.js";
@@ -617,4 +617,4 @@ export {
   chipClasses_default,
   Chip_default
 };
-//# sourceMappingURL=chunk-KP6QWQS5.js.map
+//# sourceMappingURL=chunk-MMH4JDJZ.js.map

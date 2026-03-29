@@ -1,13 +1,4 @@
 import {
-  listItemTextClasses_default
-} from "./chunk-TDINKJZD.js";
-import {
-  listItemIconClasses_default
-} from "./chunk-ESTUF33X.js";
-import {
-  dividerClasses_default
-} from "./chunk-AJJBSLRJ.js";
-import {
   ListContext_default
 } from "./chunk-NCJO2UTB.js";
 import {
@@ -17,11 +8,11 @@ import {
   useEnhancedEffect_default
 } from "./chunk-IAMXQWPF.js";
 import {
-  useForkRef_default
-} from "./chunk-73NAO42N.js";
-import {
   memoTheme_default
 } from "./chunk-EZYBKUPR.js";
+import {
+  useForkRef_default
+} from "./chunk-73NAO42N.js";
 import {
   useDefaultProps
 } from "./chunk-AEFPJTIZ.js";
@@ -47,62 +38,66 @@ import {
   __toESM
 } from "./chunk-SNAQBZPT.js";
 
-// node_modules/@mui/material/MenuItem/MenuItem.js
+// node_modules/@mui/material/ListItemButton/ListItemButton.js
 var React = __toESM(require_react());
 var import_prop_types = __toESM(require_prop_types());
 
-// node_modules/@mui/material/MenuItem/menuItemClasses.js
-function getMenuItemUtilityClass(slot) {
-  return generateUtilityClass("MuiMenuItem", slot);
+// node_modules/@mui/material/ListItemButton/listItemButtonClasses.js
+function getListItemButtonUtilityClass(slot) {
+  return generateUtilityClass("MuiListItemButton", slot);
 }
-var menuItemClasses = generateUtilityClasses("MuiMenuItem", ["root", "focusVisible", "dense", "disabled", "divider", "gutters", "selected"]);
-var menuItemClasses_default = menuItemClasses;
+var listItemButtonClasses = generateUtilityClasses("MuiListItemButton", ["root", "focusVisible", "dense", "alignItemsFlexStart", "disabled", "divider", "gutters", "selected"]);
+var listItemButtonClasses_default = listItemButtonClasses;
 
-// node_modules/@mui/material/MenuItem/MenuItem.js
+// node_modules/@mui/material/ListItemButton/ListItemButton.js
 var import_jsx_runtime = __toESM(require_jsx_runtime());
 var overridesResolver = (props, styles) => {
   const {
     ownerState
   } = props;
-  return [styles.root, ownerState.dense && styles.dense, ownerState.divider && styles.divider, !ownerState.disableGutters && styles.gutters];
+  return [styles.root, ownerState.dense && styles.dense, ownerState.alignItems === "flex-start" && styles.alignItemsFlexStart, ownerState.divider && styles.divider, !ownerState.disableGutters && styles.gutters];
 };
 var useUtilityClasses = (ownerState) => {
   const {
-    disabled,
+    alignItems,
+    classes,
     dense,
-    divider,
+    disabled,
     disableGutters,
-    selected,
-    classes
+    divider,
+    selected
   } = ownerState;
   const slots = {
-    root: ["root", dense && "dense", disabled && "disabled", !disableGutters && "gutters", divider && "divider", selected && "selected"]
+    root: ["root", dense && "dense", !disableGutters && "gutters", divider && "divider", disabled && "disabled", alignItems === "flex-start" && "alignItemsFlexStart", selected && "selected"]
   };
-  const composedClasses = composeClasses(slots, getMenuItemUtilityClass, classes);
+  const composedClasses = composeClasses(slots, getListItemButtonUtilityClass, classes);
   return {
     ...classes,
     ...composedClasses
   };
 };
-var MenuItemRoot = styled_default(ButtonBase_default, {
+var ListItemButtonRoot = styled_default(ButtonBase_default, {
   shouldForwardProp: (prop) => rootShouldForwardProp_default(prop) || prop === "classes",
-  name: "MuiMenuItem",
+  name: "MuiListItemButton",
   slot: "Root",
   overridesResolver
 })(memoTheme_default(({
   theme
 }) => ({
-  ...theme.typography.body1,
   display: "flex",
+  flexGrow: 1,
   justifyContent: "flex-start",
   alignItems: "center",
   position: "relative",
   textDecoration: "none",
-  minHeight: 48,
-  paddingTop: 6,
-  paddingBottom: 6,
+  minWidth: 0,
   boxSizing: "border-box",
-  whiteSpace: "nowrap",
+  textAlign: "left",
+  paddingTop: 8,
+  paddingBottom: 8,
+  transition: theme.transitions.create("background-color", {
+    duration: theme.transitions.duration.shortest
+  }),
   "&:hover": {
     textDecoration: "none",
     backgroundColor: (theme.vars || theme).palette.action.hover,
@@ -111,43 +106,41 @@ var MenuItemRoot = styled_default(ButtonBase_default, {
       backgroundColor: "transparent"
     }
   },
-  [`&.${menuItemClasses_default.selected}`]: {
+  [`&.${listItemButtonClasses_default.selected}`]: {
     backgroundColor: theme.vars ? `rgba(${theme.vars.palette.primary.mainChannel} / ${theme.vars.palette.action.selectedOpacity})` : alpha(theme.palette.primary.main, theme.palette.action.selectedOpacity),
-    [`&.${menuItemClasses_default.focusVisible}`]: {
+    [`&.${listItemButtonClasses_default.focusVisible}`]: {
       backgroundColor: theme.vars ? `rgba(${theme.vars.palette.primary.mainChannel} / calc(${theme.vars.palette.action.selectedOpacity} + ${theme.vars.palette.action.focusOpacity}))` : alpha(theme.palette.primary.main, theme.palette.action.selectedOpacity + theme.palette.action.focusOpacity)
     }
   },
-  [`&.${menuItemClasses_default.selected}:hover`]: {
+  [`&.${listItemButtonClasses_default.selected}:hover`]: {
     backgroundColor: theme.vars ? `rgba(${theme.vars.palette.primary.mainChannel} / calc(${theme.vars.palette.action.selectedOpacity} + ${theme.vars.palette.action.hoverOpacity}))` : alpha(theme.palette.primary.main, theme.palette.action.selectedOpacity + theme.palette.action.hoverOpacity),
     // Reset on touch devices, it doesn't add specificity
     "@media (hover: none)": {
       backgroundColor: theme.vars ? `rgba(${theme.vars.palette.primary.mainChannel} / ${theme.vars.palette.action.selectedOpacity})` : alpha(theme.palette.primary.main, theme.palette.action.selectedOpacity)
     }
   },
-  [`&.${menuItemClasses_default.focusVisible}`]: {
+  [`&.${listItemButtonClasses_default.focusVisible}`]: {
     backgroundColor: (theme.vars || theme).palette.action.focus
   },
-  [`&.${menuItemClasses_default.disabled}`]: {
+  [`&.${listItemButtonClasses_default.disabled}`]: {
     opacity: (theme.vars || theme).palette.action.disabledOpacity
   },
-  [`& + .${dividerClasses_default.root}`]: {
-    marginTop: theme.spacing(1),
-    marginBottom: theme.spacing(1)
-  },
-  [`& + .${dividerClasses_default.inset}`]: {
-    marginLeft: 52
-  },
-  [`& .${listItemTextClasses_default.root}`]: {
-    marginTop: 0,
-    marginBottom: 0
-  },
-  [`& .${listItemTextClasses_default.inset}`]: {
-    paddingLeft: 36
-  },
-  [`& .${listItemIconClasses_default.root}`]: {
-    minWidth: 36
-  },
   variants: [{
+    props: ({
+      ownerState
+    }) => ownerState.divider,
+    style: {
+      borderBottom: `1px solid ${(theme.vars || theme).palette.divider}`,
+      backgroundClip: "padding-box"
+    }
+  }, {
+    props: {
+      alignItems: "flex-start"
+    },
+    style: {
+      alignItems: "flex-start"
+    }
+  }, {
     props: ({
       ownerState
     }) => !ownerState.disableGutters,
@@ -158,100 +151,82 @@ var MenuItemRoot = styled_default(ButtonBase_default, {
   }, {
     props: ({
       ownerState
-    }) => ownerState.divider,
-    style: {
-      borderBottom: `1px solid ${(theme.vars || theme).palette.divider}`,
-      backgroundClip: "padding-box"
-    }
-  }, {
-    props: ({
-      ownerState
-    }) => !ownerState.dense,
-    style: {
-      [theme.breakpoints.up("sm")]: {
-        minHeight: "auto"
-      }
-    }
-  }, {
-    props: ({
-      ownerState
     }) => ownerState.dense,
     style: {
-      minHeight: 32,
-      // https://m2.material.io/components/menus#specs > Dense
       paddingTop: 4,
-      paddingBottom: 4,
-      ...theme.typography.body2,
-      [`& .${listItemIconClasses_default.root} svg`]: {
-        fontSize: "1.25rem"
-      }
+      paddingBottom: 4
     }
   }]
 })));
-var MenuItem = React.forwardRef(function MenuItem2(inProps, ref) {
+var ListItemButton = React.forwardRef(function ListItemButton2(inProps, ref) {
   const props = useDefaultProps({
     props: inProps,
-    name: "MuiMenuItem"
+    name: "MuiListItemButton"
   });
   const {
+    alignItems = "center",
     autoFocus = false,
-    component = "li",
+    component = "div",
+    children,
     dense = false,
-    divider = false,
     disableGutters = false,
+    divider = false,
     focusVisibleClassName,
-    role = "menuitem",
-    tabIndex: tabIndexProp,
+    selected = false,
     className,
     ...other
   } = props;
   const context = React.useContext(ListContext_default);
   const childContext = React.useMemo(() => ({
     dense: dense || context.dense || false,
+    alignItems,
     disableGutters
-  }), [context.dense, dense, disableGutters]);
-  const menuItemRef = React.useRef(null);
+  }), [alignItems, context.dense, dense, disableGutters]);
+  const listItemRef = React.useRef(null);
   useEnhancedEffect_default(() => {
     if (autoFocus) {
-      if (menuItemRef.current) {
-        menuItemRef.current.focus();
+      if (listItemRef.current) {
+        listItemRef.current.focus();
       } else if (true) {
-        console.error("MUI: Unable to set focus to a MenuItem whose component has not been rendered.");
+        console.error("MUI: Unable to set focus to a ListItemButton whose component has not been rendered.");
       }
     }
   }, [autoFocus]);
   const ownerState = {
     ...props,
+    alignItems,
     dense: childContext.dense,
+    disableGutters,
     divider,
-    disableGutters
+    selected
   };
-  const classes = useUtilityClasses(props);
-  const handleRef = useForkRef_default(menuItemRef, ref);
-  let tabIndex;
-  if (!props.disabled) {
-    tabIndex = tabIndexProp !== void 0 ? tabIndexProp : -1;
-  }
+  const classes = useUtilityClasses(ownerState);
+  const handleRef = useForkRef_default(listItemRef, ref);
   return (0, import_jsx_runtime.jsx)(ListContext_default.Provider, {
     value: childContext,
-    children: (0, import_jsx_runtime.jsx)(MenuItemRoot, {
+    children: (0, import_jsx_runtime.jsx)(ListItemButtonRoot, {
       ref: handleRef,
-      role,
-      tabIndex,
-      component,
+      href: other.href || other.to,
+      component: (other.href || other.to) && component === "div" ? "button" : component,
       focusVisibleClassName: clsx_default(classes.focusVisible, focusVisibleClassName),
+      ownerState,
       className: clsx_default(classes.root, className),
       ...other,
-      ownerState,
-      classes
+      classes,
+      children
     })
   });
 });
-true ? MenuItem.propTypes = {
+true ? ListItemButton.propTypes = {
   // ┌────────────────────────────── Warning ──────────────────────────────┐
   // │ These PropTypes are generated from the TypeScript type definitions. │
   // │    To update them, edit the d.ts file and run `pnpm proptypes`.     │
   // └─────────────────────────────────────────────────────────────────────┘
+  /**
+   * Defines the `align-items` style property.
+   * @default 'center'
+   */
+  alignItems: import_prop_types.default.oneOf(["center", "flex-start"]),
   /**
    * If `true`, the list item is focused during the first mount.
    * Focus will also be triggered if the value changes from false to true.
@@ -259,7 +234,8 @@ true ? MenuItem.propTypes = {
    */
   autoFocus: import_prop_types.default.bool,
   /**
-   * The content of the component.
+   * The content of the component if a `ListItemSecondaryAction` is used it must
+   * be the last child.
    */
   children: import_prop_types.default.node,
   /**
@@ -277,12 +253,13 @@ true ? MenuItem.propTypes = {
   component: import_prop_types.default.elementType,
   /**
    * If `true`, compact vertical padding designed for keyboard and mouse input is used.
-   * The prop defaults to the value inherited from the parent Menu component.
+   * The prop defaults to the value inherited from the parent List component.
    * @default false
    */
   dense: import_prop_types.default.bool,
   /**
-   * @ignore
+   * If `true`, the component is disabled.
+   * @default false
    */
   disabled: import_prop_types.default.bool,
   /**
@@ -291,7 +268,7 @@ true ? MenuItem.propTypes = {
    */
   disableGutters: import_prop_types.default.bool,
   /**
-   * If `true`, a 1px light border is added to the bottom of the menu item.
+   * If `true`, a 1px light border is added to the bottom of the list item.
    * @default false
    */
   divider: import_prop_types.default.bool,
@@ -307,26 +284,22 @@ true ? MenuItem.propTypes = {
   /**
    * @ignore
    */
-  role: import_prop_types.default.string,
+  href: import_prop_types.default.string,
   /**
-   * If `true`, the component is selected.
+   * Use to apply selected styling.
    * @default false
    */
   selected: import_prop_types.default.bool,
   /**
    * The system prop that allows defining system overrides as well as additional CSS styles.
    */
-  sx: import_prop_types.default.oneOfType([import_prop_types.default.arrayOf(import_prop_types.default.oneOfType([import_prop_types.default.func, import_prop_types.default.object, import_prop_types.default.bool])), import_prop_types.default.func, import_prop_types.default.object]),
-  /**
-   * @default 0
-   */
-  tabIndex: import_prop_types.default.number
+  sx: import_prop_types.default.oneOfType([import_prop_types.default.arrayOf(import_prop_types.default.oneOfType([import_prop_types.default.func, import_prop_types.default.object, import_prop_types.default.bool])), import_prop_types.default.func, import_prop_types.default.object])
 } : void 0;
-var MenuItem_default = MenuItem;
+var ListItemButton_default = ListItemButton;
 
 export {
-  getMenuItemUtilityClass,
-  menuItemClasses_default,
-  MenuItem_default
+  getListItemButtonUtilityClass,
+  listItemButtonClasses_default,
+  ListItemButton_default
 };
-//# sourceMappingURL=chunk-KWYHBSTI.js.map
+//# sourceMappingURL=chunk-2YUAFX4K.js.map

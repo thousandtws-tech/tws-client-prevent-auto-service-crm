@@ -7,7 +7,7 @@ import {
 } from "./authStorage";
 
 const TRUE_VALUES = new Set(["1", "true", "yes", "on"]);
-const DEFAULT_BACKEND_BASE_URL = "http://localhost:9090";
+const DEFAULT_BACKEND_BASE_URL = "https://widespread-sisely-thousandtws-edbea720.koyeb.app";
 
 const parseBooleanEnv = (value?: string) => {
   if (!value) {
