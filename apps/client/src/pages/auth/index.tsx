@@ -214,8 +214,8 @@ const verificationPanelByStatus = {
     border: "1px solid rgba(33, 150, 243, 0.24)",
     items: [
       "O cadastro foi criado, mas o primeiro acesso depende da validação por e-mail.",
-      "Abra a caixa de entrada do responsável e confirme o link enviado pelo sistema.",
-      "Depois da confirmação, volte para esta tela e entre normalmente.",
+      "Abra a caixa de entrada do responsável e localize o código de 6 dígitos enviado pelo sistema.",
+      "Depois da validação, volte para esta tela e entre normalmente.",
     ],
   },
   success: {
@@ -318,6 +318,25 @@ const CorporateAuthPage: React.FC<CorporateAuthPageProps> = ({
     emailVerificationStatus === "error"
       ? verificationPanelByStatus[emailVerificationStatus]
       : null;
+
+  React.useEffect(() => {
+    if (type !== "login") {
+      return;
+    }
+
+    const emailFromQuery = searchParams.get("email")?.trim() ?? "";
+    const workshopSlugFromQuery = searchParams.get("workshopSlug")?.trim() ?? "";
+
+    if (!emailFromQuery && !workshopSlugFromQuery) {
+      return;
+    }
+
+    setLoginForm((current) => ({
+      ...current,
+      email: emailFromQuery || current.email,
+      workshopSlug: workshopSlugFromQuery || current.workshopSlug,
+    }));
+  }, [searchParams, type]);
 
   const highlights = getHighlights(type);
 

@@ -83,6 +83,7 @@ export const EmailVerificationPage: React.FC = () => {
     rawStatus === "success" || rawStatus === "error" ? rawStatus : "pending";
   const initialMessage = searchParams.get("message")?.trim() ?? "";
   const parsedUserId = Number(searchParams.get("userId")?.trim() ?? "");
+  const workshopSlug = searchParams.get("workshopSlug")?.trim() ?? "";
   const email = searchParams.get("email")?.trim() ?? "";
   const userId = Number.isFinite(parsedUserId) && parsedUserId > 0 ? parsedUserId : null;
   const [status, setStatus] = React.useState<"pending" | "success" | "error">(initialStatus);
@@ -90,6 +91,21 @@ export const EmailVerificationPage: React.FC = () => {
   const [code, setCode] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [secondsLeft, setSecondsLeft] = React.useState(4);
+
+  const loginUrl = React.useMemo(() => {
+    const params = new URLSearchParams();
+    params.set("emailVerification", status);
+    if (message) {
+      params.set("message", message);
+    }
+    if (email) {
+      params.set("email", email);
+    }
+    if (workshopSlug) {
+      params.set("workshopSlug", workshopSlug);
+    }
+    return `/login?${params.toString()}`;
+  }, [email, message, status, workshopSlug]);
 
   React.useEffect(() => {
     if (status !== "success") {
@@ -100,7 +116,7 @@ export const EmailVerificationPage: React.FC = () => {
       setSecondsLeft((current) => {
         if (current <= 1) {
           window.clearInterval(intervalId);
-          window.location.replace("/login");
+          window.location.replace(loginUrl);
           return 0;
         }
 
@@ -109,7 +125,7 @@ export const EmailVerificationPage: React.FC = () => {
     }, 1000);
 
     return () => window.clearInterval(intervalId);
-  }, [status]);
+  }, [loginUrl, status]);
 
   const config = statusConfig[status];
   const isPending = status === "pending";
@@ -333,6 +349,31 @@ export const EmailVerificationPage: React.FC = () => {
                   />
                 ) : null}
 
+                {workshopSlug ? (
+                  <TextField
+                    value={workshopSlug}
+                    fullWidth
+                    disabled
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: "12px",
+                        backgroundColor: alpha("#000000", 0.18),
+                        color: BRAND.whiteSoft,
+                        "& fieldset": {
+                          borderColor: alpha(config.accent, 0.22),
+                        },
+                      },
+                    }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <LoginOutlinedIcon sx={{ color: alpha(config.accent, 0.88) }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                ) : null}
+
                 {message ? (
                   <Alert
                     severity={
@@ -445,7 +486,7 @@ export const EmailVerificationPage: React.FC = () => {
             </Box>
 
             <Button
-              href="/login"
+              href={loginUrl}
               variant="contained"
               fullWidth
               startIcon={<LoginOutlinedIcon />}
